@@ -6,4 +6,12 @@ class ScanResultResponse(BaseModel):
     confidence: float
     is_invasive: bool
     message: str
-    points: int   # <-- Nowe pole!
+    points: int
+    
+    
+class PlantEntry(BaseModel):
+    polish_name: str
+    latin_name: str 
+    invasivness: str
+    points: int 
+    description: str = ""
