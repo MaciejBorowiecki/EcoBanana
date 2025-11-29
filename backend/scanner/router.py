@@ -1,7 +1,9 @@
 from fastapi import APIRouter, UploadFile, File
-from .schemas import ScanResultResponse
+from .schemas import ScanResultResponse, PlantEntry
 from .ai_engine import ai_engine
 from .plant_service import plant_db
+from typing import List
+
 
 # --- TEJ LINIJKI BRAKOWAŁO U CIEBIE: ---
 router = APIRouter()
@@ -33,13 +35,15 @@ async def scan_plant(file: UploadFile = File(...)):
 
     if plant_info:
         # ZNALEZIONO INWAZYJNĄ W CSV
+        base_points = int(plant_info['points'])
+        multiplier = 10
         return {
             "plant_name": plant_info['polish_name'],
             "latin_name": plant_info['latin_name'],
             "confidence": round(ai_result['confidence'], 2),
             "is_invasive": True,
             "message": f"Zidentyfikowano gatunek inwazyjny: {plant_info['polish_name']}",
-            "points": int(plant_info['points'])
+            "points": base_points * multiplier
         }
     else:
         # NIE MA W CSV (bezpieczna lub nieznana)
@@ -51,3 +55,7 @@ async def scan_plant(file: UploadFile = File(...)):
             "message": "To wygląda na bezpieczną roślinę (brak w bazie IGO).",
             "points": 0
         }
+        
+@router.get("/plants", response_model=List[PlantEntry])
+def get_knowledge_base():
+    return plant_db.get_all_plants()
