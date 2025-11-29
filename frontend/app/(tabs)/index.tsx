@@ -62,11 +62,23 @@ const RewardsScreen = () => (
   <ScrollView style={styles.screenContainer}>
     <Text style={styles.screenTitle}>Nagrody</Text>
     <Text style={styles.subTitle}>Wymień punkty na zniżki!</Text>
+    
+    {/* Karta 1: Kawa */}
     <View style={styles.couponCard}>
       <View style={styles.couponLeft}><FontAwesome5 name="coffee" size={30} color="#8B4513" /></View>
       <View style={styles.couponRight}>
         <Text style={styles.couponTitle}>Darmowa Kawa</Text>
         <Text style={styles.couponCost}>500 pkt</Text>
+        <TouchableOpacity style={styles.redeemButton}><Text style={styles.redeemText}>Odbierz</Text></TouchableOpacity>
+      </View>
+    </View>
+
+    {/* Karta 2: Bilet (To co brakowało) */}
+    <View style={styles.couponCard}>
+      <View style={styles.couponLeft}><FontAwesome5 name="bus" size={30} color="#000" /></View>
+      <View style={styles.couponRight}>
+        <Text style={styles.couponTitle}>Bilet 24h MPK</Text>
+        <Text style={styles.couponCost}>1000 pkt</Text>
         <TouchableOpacity style={styles.redeemButton}><Text style={styles.redeemText}>Odbierz</Text></TouchableOpacity>
       </View>
     </View>
