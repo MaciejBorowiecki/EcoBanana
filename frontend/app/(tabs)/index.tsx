@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -10,247 +10,276 @@ import {
   Modal, 
   Button,
   ScrollView,
-  Image
+  Alert,
+  Image // Dodane do wyświetlania zdjęcia
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location'; 
+
+// Import funkcji z naszego "backendu"
+import { analyzePlant, getUserProfile, ScanResult, UserProfile } from '../../utils/api';
 
 const { width } = Dimensions.get('window');
 
-// --- EKRANY DODATKOWE (MOCKUPY) ---
+// --- EKRANY POMOCNICZE (UI) ---
 
-// 1. Ekran Profilu
-const ProfileScreen = () => (
-  <View style={styles.screenContainer}>
-    <View style={styles.profileHeader}>
-      <View style={styles.avatarCircle}>
-        <Ionicons name="person" size={50} color="#FFF" />
-      </View>
-      <Text style={styles.profileName}>Łowca Roślin</Text>
-      <Text style={styles.profileLevel}>Poziom 5: Ekspert</Text>
-    </View>
+// 1. Profil teraz przyjmuje dane dynamicznie (props)
+const ProfileScreen = ({ user }: { user: UserProfile | null }) => {
+  if (!user) return <ActivityIndicator color="#32CD32" style={{marginTop: 50}} />;
 
-    <View style={styles.statsRow}>
-      <View style={styles.statBox}>
-        <Text style={styles.statValue}>1250</Text>
-        <Text style={styles.statLabel}>Punkty</Text>
+  return (
+    <View style={styles.screenContainer}>
+      <View style={styles.profileHeader}>
+        <View style={styles.avatarCircle}>
+          <Ionicons name="person" size={50} color="#FFF" />
+        </View>
+        <Text style={styles.profileName}>Łowca Roślin</Text>
+        <Text style={styles.profileLevel}>Poziom: {user.level}</Text>
       </View>
-      <View style={styles.statBox}>
-        <Text style={styles.statValue}>42</Text>
-        <Text style={styles.statLabel}>Zgłoszenia</Text>
-      </View>
-    </View>
-
-    <Text style={styles.sectionTitle}>Ostatnie aktywności</Text>
-    <ScrollView style={styles.activityList}>
-      <View style={styles.activityItem}>
-        <Ionicons name="checkmark-circle" size={24} color="#32CD32" />
-        <View style={{marginLeft: 10}}>
-          <Text style={styles.actTitle}>Zgłoszono Barszcz Sosn.</Text>
-          <Text style={styles.actDate}>Dzisiaj, 14:30 +50 pkt</Text>
+      <View style={styles.statsRow}>
+        <View style={styles.statBox}>
+          {/* Tu wyświetlamy prawdziwe punkty */}
+          <Text style={styles.statValue}>{user.points}</Text>
+          <Text style={styles.statLabel}>Punkty</Text>
+        </View>
+        <View style={styles.statBox}>
+          <Text style={styles.statValue}>{user.scansCount}</Text>
+          <Text style={styles.statLabel}>Zgłoszenia</Text>
         </View>
       </View>
+      <Text style={styles.sectionTitle}>Twoje ostatnie akcje:</Text>
       <View style={styles.activityItem}>
         <Ionicons name="checkmark-circle" size={24} color="#32CD32" />
-        <View style={{marginLeft: 10}}>
-          <Text style={styles.actTitle}>Zgłoszono Nawłoć</Text>
-          <Text style={styles.actDate}>Wczoraj, 09:15 +20 pkt</Text>
-        </View>
+        <Text style={{marginLeft:10, color:'#555'}}>Zgłoszono Barszcz (+50pkt)</Text>
       </View>
-    </ScrollView>
-  </View>
-);
+    </View>
+  );
+};
 
-// 2. Ekran Nagród
 const RewardsScreen = () => (
   <ScrollView style={styles.screenContainer}>
     <Text style={styles.screenTitle}>Nagrody</Text>
     <Text style={styles.subTitle}>Wymień punkty na zniżki!</Text>
-    
     <View style={styles.couponCard}>
-      <View style={styles.couponLeft}>
-        <FontAwesome5 name="coffee" size={30} color="#8B4513" />
-      </View>
+      <View style={styles.couponLeft}><FontAwesome5 name="coffee" size={30} color="#8B4513" /></View>
       <View style={styles.couponRight}>
         <Text style={styles.couponTitle}>Darmowa Kawa</Text>
         <Text style={styles.couponCost}>500 pkt</Text>
-        <TouchableOpacity style={styles.redeemButton}>
-          <Text style={styles.redeemText}>Odbierz</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-
-    <View style={styles.couponCard}>
-      <View style={styles.couponLeft}>
-        <FontAwesome5 name="bus" size={30} color="#000" />
-      </View>
-      <View style={styles.couponRight}>
-        <Text style={styles.couponTitle}>Bilet 24h MPK</Text>
-        <Text style={styles.couponCost}>1000 pkt</Text>
-        <TouchableOpacity style={styles.redeemButton}>
-          <Text style={styles.redeemText}>Odbierz</Text>
-        </TouchableOpacity>
+        <TouchableOpacity style={styles.redeemButton}><Text style={styles.redeemText}>Odbierz</Text></TouchableOpacity>
       </View>
     </View>
   </ScrollView>
 );
 
-// 3. Ekran Listy Roślin (Baza wiedzy)
 const PlantsScreen = () => (
   <ScrollView style={styles.screenContainer}>
-    <Text style={styles.screenTitle}>Baza Inwazyjna</Text>
-    
+    <Text style={styles.screenTitle}>Baza Wiedzy</Text>
     <View style={styles.plantCard}>
       <Text style={styles.plantCardTitle}>Barszcz Sosnowskiego</Text>
-      <Text style={styles.plantCardDesc}>Bardzo niebezpieczna roślina parząca. Unikaj kontaktu ze skórą.</Text>
+      <Text style={styles.plantCardDesc}>Bardzo niebezpieczna roślina parząca. Osiąga do 4m wysokości.</Text>
       <View style={styles.dangerBadge}><Text style={styles.dangerText}>WYSOKIE RYZYKO</Text></View>
-    </View>
-
-    <View style={styles.plantCard}>
-      <Text style={styles.plantCardTitle}>Nawłoć Kanadyjska</Text>
-      <Text style={styles.plantCardDesc}>Wypiera rodzime gatunki roślin. Często spotykana na łąkach.</Text>
-      <View style={[styles.dangerBadge, {backgroundColor:'#FFA500'}]}><Text style={styles.dangerText}>ŚREDNIE RYZYKO</Text></View>
     </View>
   </ScrollView>
 );
-
 
 // --- GŁÓWNY KOMPONENT ---
 
 export default function Index() {
-  const [permission, requestPermission] = useCameraPermissions();
-  
-  // NOWE: Stan do zarządzania zakładkami
+  const [camPermission, requestCamPermission] = useCameraPermissions();
   const [activeTab, setActiveTab] = useState<'camera' | 'plants' | 'rewards' | 'profile'>('camera');
   
+  // Stan logiki
   const [isScanning, setIsScanning] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [scanResult, setScanResult] = useState<'invasive' | 'safe' | null>(null);
-
-  if (!permission) return <View style={styles.container} />;
+  const [resultData, setResultData] = useState<ScanResult | null>(null);
+  const [location, setLocation] = useState<Location.LocationObject | null>(null);
   
-  if (!permission.granted) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: 'white', marginBottom: 20 }}>Potrzebny dostęp do kamery</Text>
-        <Button onPress={requestPermission} title="Przyznaj dostęp" color="#32CD32" />
-      </View>
-    );
-  }
+  // NOWE: Stan użytkownika (punkty z bazy)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
-  const handleScan = () => {
+  // NOWE: Referencja do kamery (by robić zdjęcia)
+  const cameraRef = useRef<CameraView>(null);
+
+  // 1. Pobieranie lokalizacji i profilu usera przy starcie
+  useEffect(() => {
+    (async () => {
+      // GPS
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        let loc = await Location.getCurrentPositionAsync({});
+        setLocation(loc);
+      }
+      
+      // Pobierz dane usera z "Bazy"
+      const profile = await getUserProfile();
+      setUserProfile(profile);
+    })();
+  }, []);
+
+  // 2. Logika Skanowania (Prawdziwe zdjęcie)
+  const handleScan = async () => {
+    if (isScanning || !cameraRef.current) return;
     setIsScanning(true);
-    setTimeout(() => {
+    
+    try {
+      // A. Robimy prawdziwe zdjęcie!
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.5, // Kompresja dla szybkości
+        base64: false, // Na razie wystarczy nam URI
+        skipProcessing: true // Szybciej
+      });
+
+      // B. Przygotuj koordynaty
+      const locCoords = location ? { 
+        lat: location.coords.latitude, 
+        lng: location.coords.longitude 
+      } : null;
+
+      // C. Wyślij zdjęcie do "API"
+      if (photo?.uri) {
+        const data = await analyzePlant(photo.uri, locCoords);
+        setResultData(data);
+        
+        // D. Aktualizuj punkty (symulacja zapisu w bazie)
+        if (userProfile) {
+          setUserProfile({
+            ...userProfile,
+            points: userProfile.points + data.pointsEarned,
+            scansCount: userProfile.scansCount + 1
+          });
+        }
+        
+        setModalVisible(true);
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Błąd", "Nie udało się przetworzyć zdjęcia.");
+    } finally {
       setIsScanning(false);
-      const randomResult = Math.random() > 0.4 ? 'invasive' : 'safe';
-      setScanResult(randomResult);
-      setModalVisible(true);
-    }, 2000);
+    }
   };
 
   const closeResult = () => {
     setModalVisible(false);
-    setScanResult(null);
+    setResultData(null);
   };
 
-  // Funkcja renderująca odpowiedni ekran
+  if (!camPermission || !camPermission.granted) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ marginBottom: 20 }}>Aplikacja wymaga dostępu do kamery</Text>
+        <Button onPress={requestCamPermission} title="Przyznaj dostęp" />
+      </View>
+    );
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case 'camera':
         return (
-          <CameraView style={styles.camera} facing="back">
+          <CameraView 
+            ref={cameraRef} // Przypinamy ref
+            style={styles.camera} 
+            facing="back"
+          >
             <SafeAreaView style={styles.uiLayer}>
               <View style={styles.topOverlay}>
                 <View style={styles.badge}>
                   <Ionicons name="scan-outline" size={16} color="white" />
-                  <Text style={styles.topText}>Szukam inwazyjnych roślin...</Text>
+                  <Text style={styles.topText}>BioBounty AI</Text>
                 </View>
               </View>
+
               <View style={styles.centerFocus}>
                 {isScanning ? (
                   <View style={styles.loaderContainer}>
                     <ActivityIndicator size="large" color="#32CD32" />
-                    <Text style={styles.scanningText}>AI Analizuje...</Text>
+                    <Text style={styles.scanningText}>Wysyłanie danych...</Text>
                   </View>
                 ) : (
-                  <View style={styles.focusFrame} />
+                  <View style={styles.focusFrame}>
+                    <View style={[styles.corner, styles.tl]} />
+                    <View style={[styles.corner, styles.tr]} />
+                    <View style={[styles.corner, styles.bl]} />
+                    <View style={[styles.corner, styles.br]} />
+                  </View>
                 )}
               </View>
+
               <View style={styles.controlsContainer}>
-                <TouchableOpacity 
-                  style={[styles.scanButton, isScanning && { backgroundColor: '#555' }]} 
-                  onPress={handleScan} 
-                  disabled={isScanning}
-                >
-                  <Text style={styles.scanButtonText}>
-                    {isScanning ? 'SKANOWANIE...' : 'SKANUJ'}
-                  </Text>
+                <TouchableOpacity onPress={handleScan} activeOpacity={0.8} disabled={isScanning}>
+                  <LinearGradient
+                    colors={['#32CD32', '#228B22']}
+                    style={styles.scanButton}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                  >
+                    <Ionicons name="aperture" size={24} color="white" style={{marginRight: 10}} />
+                    <Text style={styles.scanButtonText}>
+                      {isScanning ? 'PRZETWARZANIE...' : 'SKANUJ'}
+                    </Text>
+                  </LinearGradient>
                 </TouchableOpacity>
               </View>
             </SafeAreaView>
           </CameraView>
         );
-      case 'plants':
-        return <PlantsScreen />;
-      case 'rewards':
-        return <RewardsScreen />;
-      case 'profile':
-        return <ProfileScreen />;
-      default:
-        return null;
+      case 'plants': return <PlantsScreen />;
+      case 'rewards': return <RewardsScreen />;
+      case 'profile': return <ProfileScreen user={userProfile} />; // Przekazujemy usera
+      default: return null;
     }
   };
 
   return (
     <View style={styles.container}>
-      
-      {/* 1. Wyświetlanie treści w zależności od zakładki */}
-      <View style={{ flex: 1 }}>
-        {renderContent()}
-      </View>
+      <View style={{ flex: 1 }}>{renderContent()}</View>
 
-      {/* 2. Dolny Pasek Nawigacji */}
       <View style={styles.bottomBar}>
-        
         <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('camera')}>
           <Ionicons name="camera" size={28} color={activeTab === 'camera' ? '#32CD32' : '#ccc'} />
-          {activeTab === 'camera' && <View style={styles.activeDot} />}
         </TouchableOpacity>
-        
         <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('plants')}>
           <Ionicons name="leaf" size={28} color={activeTab === 'plants' ? '#32CD32' : '#ccc'} />
-          {activeTab === 'plants' && <View style={styles.activeDot} />}
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('rewards')}>
           <Ionicons name="trophy" size={28} color={activeTab === 'rewards' ? '#32CD32' : '#ccc'} />
-          {activeTab === 'rewards' && <View style={styles.activeDot} />}
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('profile')}>
           <Ionicons name="person" size={28} color={activeTab === 'profile' ? '#32CD32' : '#ccc'} />
-          {activeTab === 'profile' && <View style={styles.activeDot} />}
         </TouchableOpacity>
-
       </View>
 
-      {/* Modal Wyniku (tylko na ekranie kamery lub globalnie) */}
+      {/* Modal Wyniku */}
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={closeResult}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {scanResult === 'invasive' ? (
+            
+            {/* Wyświetlamy zrobione zdjęcie! */}
+            {resultData?.capturedImageUri && (
+              <Image 
+                source={{ uri: resultData.capturedImageUri }} 
+                style={styles.resultImage} 
+              />
+            )}
+
+            {resultData?.isInvasive ? (
               <>
-                <Ionicons name="warning" size={60} color="#FF4500" />
                 <Text style={styles.modalTitle}>Wykryto zagrożenie!</Text>
-                <Text style={styles.plantName}>Barszcz Sosnowskiego</Text>
-                <Text style={styles.desc}>Zachowaj ostrożność. Roślina parząca.</Text>
-                <View style={styles.pointsBadge}><Text style={styles.pointsText}>+50 PKT</Text></View>
+                <Text style={styles.plantName}>{resultData.plantName}</Text>
+                <Text style={styles.desc}>{resultData.description}</Text>
+                
+                <View style={styles.pointsBadge}>
+                  <Text style={styles.pointsText}>+{resultData.pointsEarned} PKT</Text>
+                </View>
               </>
             ) : (
               <>
-                <Ionicons name="checkmark-circle" size={60} color="#32CD32" />
                 <Text style={styles.modalTitle}>Roślina bezpieczna</Text>
-                <Text style={styles.desc}>To zwykła roślinność łąkowa.</Text>
+                <Text style={[styles.plantName, {color: '#228B22'}]}>{resultData?.plantName}</Text>
+                <Text style={styles.desc}>{resultData?.description}</Text>
               </>
             )}
             <TouchableOpacity onPress={closeResult} style={styles.closeButton}>
@@ -267,68 +296,60 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   camera: { flex: 1 },
   uiLayer: { flex: 1, justifyContent: 'space-between' },
-  
-  // Style Kamery
-  topOverlay: { alignItems: 'center', marginTop: 50 },
+  topOverlay: { alignItems: 'center', marginTop: 60 },
   badge: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, alignItems: 'center' },
   topText: { color: 'white', marginLeft: 8, fontWeight: '600' },
   centerFocus: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  focusFrame: { width: 280, height: 350, borderWidth: 2, borderColor: 'white', borderRadius: 20, borderStyle: 'dashed' },
-  loaderContainer: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 20, borderRadius: 15, alignItems: 'center' },
-  scanningText: { color: 'white', marginTop: 10, fontWeight: 'bold' },
-  controlsContainer: { alignItems: 'center', marginBottom: 20 },
-  scanButton: { backgroundColor: '#32CD32', width: width * 0.8, padding: 18, borderRadius: 30, alignItems: 'center', elevation: 5 },
-  scanButtonText: { color: 'white', fontSize: 20, fontWeight: 'bold', letterSpacing: 1 },
+  focusFrame: { width: 280, height: 300, position: 'relative' },
+  corner: { position: 'absolute', width: 30, height: 30, borderColor: 'white', borderWidth: 4, borderRadius: 2 },
+  tl: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0 },
+  tr: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0 },
+  bl: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0 },
+  br: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0 },
+  loaderContainer: { backgroundColor: 'rgba(0,0,0,0.85)', padding: 25, borderRadius: 20, alignItems: 'center' },
+  scanningText: { color: 'white', marginTop: 15, fontWeight: 'bold', fontSize: 16 },
+  controlsContainer: { alignItems: 'center', marginBottom: 30 },
+  scanButton: { flexDirection: 'row', width: width * 0.85, paddingVertical: 18, borderRadius: 30, alignItems: 'center', justifyContent: 'center', elevation: 8 },
+  scanButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
+  bottomBar: { height: 90, backgroundColor: 'white', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingBottom: 20, borderTopWidth: 1, borderTopColor: '#eee', elevation: 20 },
+  navItem: { alignItems: 'center', justifyContent: 'center', height: '100%', width: 70 },
   
-  // Style Dolnego Paska
-  bottomBar: { height: 85, backgroundColor: 'white', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingBottom: 20, borderTopWidth: 1, borderTopColor: '#eee', elevation: 10 },
-  navItem: { alignItems: 'center', justifyContent: 'center', height: '100%', width: 60 },
-  activeDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#32CD32', marginTop: 4 },
-
-  // Style Modala
+  // Modal i Wyniki
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '85%', backgroundColor: 'white', padding: 25, borderRadius: 25, alignItems: 'center', elevation: 10 },
-  modalTitle: { fontSize: 24, fontWeight: 'bold', marginTop: 15, color: '#333' },
-  plantName: { fontSize: 20, color: '#FF4500', fontWeight: 'bold', marginVertical: 5 },
+  modalContent: { width: '85%', backgroundColor: 'white', padding: 25, borderRadius: 30, alignItems: 'center', elevation: 10 },
+  resultImage: { width: 120, height: 120, borderRadius: 15, marginBottom: 15, borderWidth: 3, borderColor: '#eee' },
+  modalTitle: { fontSize: 26, fontWeight: 'bold', color: '#333' },
+  plantName: { fontSize: 22, color: '#FF4500', fontWeight: 'bold', marginVertical: 8 },
   desc: { textAlign: 'center', color: '#666', marginVertical: 10, fontSize: 16 },
-  pointsBadge: { backgroundColor: '#FFD700', paddingHorizontal: 15, paddingVertical: 5, borderRadius: 10, marginTop: 5 },
-  pointsText: { fontWeight: 'bold', color: '#B8860B' },
-  closeButton: { marginTop: 25, backgroundColor: '#333', paddingHorizontal: 40, paddingVertical: 12, borderRadius: 20 },
-  closeButtonText: { color: 'white', fontWeight: 'bold' },
+  pointsBadge: { backgroundColor: '#FFD700', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 15, marginTop: 15 },
+  pointsText: { fontWeight: 'bold', color: '#B8860B', fontSize: 18 },
+  closeButton: { marginTop: 20, backgroundColor: '#333', paddingHorizontal: 50, paddingVertical: 14, borderRadius: 25 },
+  closeButtonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
 
-  // --- STYLE NOWYCH EKRANÓW ---
+  // Ekrany
   screenContainer: { flex: 1, padding: 20, paddingTop: 60 },
   screenTitle: { fontSize: 32, fontWeight: 'bold', color: '#333', marginBottom: 5 },
-  subTitle: { fontSize: 16, color: '#666', marginBottom: 20 },
-  
-  // Profil
+  subTitle: { fontSize: 16, color: '#666', marginBottom: 25 },
   profileHeader: { alignItems: 'center', marginBottom: 30 },
-  avatarCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#32CD32', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  profileName: { fontSize: 24, fontWeight: 'bold' },
-  profileLevel: { color: '#32CD32', fontWeight: '600' },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 30, backgroundColor: 'white', padding: 20, borderRadius: 15, elevation: 2 },
+  avatarCircle: { width: 110, height: 110, borderRadius: 55, backgroundColor: '#32CD32', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+  profileName: { fontSize: 26, fontWeight: 'bold' },
+  profileLevel: { color: '#32CD32', fontWeight: '600', fontSize: 16 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 30, backgroundColor: 'white', padding: 20, borderRadius: 20, elevation: 3 },
   statBox: { alignItems: 'center' },
   statValue: { fontSize: 24, fontWeight: 'bold', color: '#333' },
   statLabel: { color: '#888' },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
-  activityList: { flex: 1 },
-  activityItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10 },
-  actTitle: { fontWeight: 'bold', fontSize: 16 },
-  actDate: { color: '#888', fontSize: 12 },
-
-  // Nagrody
-  couponCard: { flexDirection: 'row', backgroundColor: 'white', borderRadius: 15, padding: 15, marginBottom: 15, elevation: 2, alignItems: 'center' },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
+  activityItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 15, borderRadius: 15, marginBottom: 10, elevation: 1 },
+  couponCard: { flexDirection: 'row', backgroundColor: 'white', borderRadius: 20, padding: 20, marginBottom: 15, elevation: 3, alignItems: 'center' },
   couponLeft: { width: 60, alignItems: 'center' },
-  couponRight: { flex: 1, paddingLeft: 10 },
+  couponRight: { flex: 1, paddingLeft: 15 },
   couponTitle: { fontSize: 18, fontWeight: 'bold' },
-  couponCost: { color: '#32CD32', fontWeight: 'bold', marginBottom: 5 },
+  couponCost: { color: '#32CD32', fontWeight: 'bold', marginBottom: 10 },
   redeemButton: { backgroundColor: '#333', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, alignSelf: 'flex-start' },
   redeemText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
-
-  // Rośliny
-  plantCard: { backgroundColor: 'white', padding: 20, borderRadius: 15, marginBottom: 15, elevation: 2 },
-  plantCardTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 5 },
-  plantCardDesc: { color: '#555', marginBottom: 10 },
-  dangerBadge: { backgroundColor: '#FF4500', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  dangerText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
+  plantCard: { backgroundColor: 'white', padding: 20, borderRadius: 20, marginBottom: 15, elevation: 3 },
+  plantCardTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 5 },
+  plantCardDesc: { color: '#555', marginBottom: 15 },
+  dangerBadge: { backgroundColor: '#FF4500', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  dangerText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
 });
