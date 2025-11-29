@@ -66,5 +66,8 @@ class PlantDatabase:
         
         return None
 
+    def get_all_plants(self):
+        return self.plants
+    
 # Singleton
 plant_db = PlantDatabase()
