@@ -1,25 +1,68 @@
-from fastapi import APIRouter, UploadFile, File, Form, Header, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from .schemas import ScanResultResponse
-# ZMIANA: Importujemy nową funkcję
-from .services import identify_plant_with_api 
+from .ai_engine import ai_engine
+from .plant_service import plant_db
 
 router = APIRouter()
 
 @router.post("/scan", response_model=ScanResultResponse)
-async def scan_plant(
-    file: UploadFile = File(...),
-    latitude: float = Form(...),
-    longitude: float = Form(...),
-    x_user_id: int = Header(..., alias="x-user-id") 
-):
-    # 1. Czytamy plik
+async def scan_plant(file: UploadFile = File(...)):
+    """
+    Endpoint to receive an image file and return plant analysis.
+    """
+    print(f"📸 Received file: {file.filename}")
+
+    # 1. Read file bytes
     image_data = await file.read()
 
-    # 2. Wysyłamy do PRAWDZIWEGO AI
-    result = await identify_plant_with_api(image_data)
+    # 2. Run AI Inference (Local)
+    ai_result = ai_engine.predict(image_data)
     
-    # Logowanie w konsoli dla pewności
-    print(f"User {x_user_id} znalazł: {result['plant_name']} ({result['confidence']*100}%)")
+    if not ai_result:
+        # Fallback if AI fails completely
+        return {
+            "plant_name": "Error",
+            "latin_name": "N/A",
+            "confidence": 0.0,
+            "is_invasive": False,
+            "message": "Could not process image."
+        }
 
-    # 3. Zwracamy wynik
-    return ScanResultResponse(**result)
+    english_label = ai_result['label']
+    confidence = ai_result['confidence']
+    print(f"🤖 AI detected: '{english_label}' with {confidence:.2f} confidence")
+
+    # 3. Match English label with Polish CSV Database
+    plant_info = plant_db.find_by_ai_label(english_label)
+
+    if plant_info:
+        # Found in our database
+        polish_name = plant_info['nazwa_polska']
+        latin_name = plant_info['nazwa_lacinska']
+        invasiveness = int(plant_info['stopien_inwazyjnosci'])
+        
+        is_invasive = invasiveness > 0
+        
+        # Generate message based on invasiveness level
+        if invasiveness == 2:
+            msg = "⛔ DANGER! Highly invasive or toxic plant detected!"
+        elif invasiveness == 1:
+            msg = "⚠️ Warning: Invasive plant detected."
+        else:
+            msg = "✅ Safe / Native plant."
+            
+    else:
+        # Not found in CSV (Unknown plant)
+        polish_name = f"Other Plant ({english_label})"
+        latin_name = "Unknown"
+        is_invasive = False
+        msg = "This plant is not listed in our invasive species database."
+
+    # 4. Return result
+    return {
+        "plant_name": polish_name,
+        "latin_name": latin_name,
+        "confidence": round(confidence, 2),
+        "is_invasive": is_invasive,
+        "message": msg
+    }
