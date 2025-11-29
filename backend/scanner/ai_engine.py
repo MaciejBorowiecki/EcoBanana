@@ -1,41 +1,66 @@
-from transformers import pipeline
-from PIL import Image
-import io
+import os
+import httpx
+import json
+from dotenv import load_dotenv
 
-class LocalPlantAI:
-    """
-    Handles local AI inference using Hugging Face Transformers.
-    It downloads the model once and keeps it in memory.
-    """
+# Ładujemy zmienne z pliku .env
+load_dotenv()
+
+class PlantNetAPI:
     def __init__(self):
-        print("Loading AI Model (microsoft/resnet-50)... This might take a while on first run.")
-        # We use ResNet-50 because it's lightweight and good at general object classification
-        self.classifier = pipeline("image-classification", model="microsoft/resnet-50")
-        print("AI Model loaded successfully!")
+        self.api_key = os.getenv("PLANTNET_API_KEY")
+        if not self.api_key:
+            print("UWAGA: Brak klucza PLANTNET_API_KEY w pliku .env!")
+        else:
+            print("Pl@ntNet API: Klucz załadowany.")
+            
+        # Endpoint API (szukamy we wszystkich florach świata)
+        self.api_url = f"https://my-api.plantnet.org/v2/identify/all?api-key={self.api_key}"
 
-    def predict(self, image_bytes: bytes):
-        """
-        Takes raw image bytes, converts to PIL Image, and runs inference.
-        """
-        try:
-            # Convert bytes to Image
-            image = Image.open(io.BytesIO(image_bytes))
-            
-            # Run inference
-            results = self.classifier(image)
-            
-            # The model returns a list of dictionaries. Example:
-            # [{'score': 0.98, 'label': 'daisy'}, {'score': 0.01, 'label': 'bee'}]
-            # We take the best result (index 0).
-            best_match = results[0]
-            
-            return {
-                "label": best_match['label'],  # English name (e.g. 'daisy')
-                "confidence": best_match['score']
-            }
-        except Exception as e:
-            print(f"AI Prediction Error: {e}")
+    async def predict(self, image_bytes: bytes):
+        if not self.api_key:
             return None
 
-# Singleton instance - ensures we load the model only once
-ai_engine = LocalPlantAI()
+        try:
+            # Pl@ntNet wymaga przesłania pliku w formacie multipart
+            files = {
+                'images': ('image.jpg', image_bytes)
+            }
+            
+            # Parametr 'organs' jest wymagany, 'auto' działa najlepiej dla ogólnych zdjęć
+            data = {
+                'organs': ['auto']
+            }
+
+            async with httpx.AsyncClient() as client:
+                response = await client.post(self.api_url, files=files, data=data, timeout=15.0)
+
+            if response.status_code != 200:
+                print(f"Błąd API Pl@ntNet: {response.text}")
+                return None
+
+            result_json = response.json()
+            
+            # Pobieramy najlepszy wynik
+            best_match = result_json['results'][0]
+            
+            # Pl@ntNet zwraca nazwę naukową (Latin) i pewność (Score)
+            latin_name = best_match['species']['scientificNameWithoutAuthor']
+            score = best_match['score']
+            
+            # Pobieramy też nazwy potoczne (Common names) jeśli są dostępne
+            common_names = best_match['species'].get('commonNames', [])
+            english_name = common_names[0] if common_names else latin_name
+
+            return {
+                "latin_name": latin_name,   # Np. "Heracleum sosnowskyi"
+                "english_name": english_name,
+                "confidence": score
+            }
+
+        except Exception as e:
+            print(f"Wyjątek połączenia z API: {e}")
+            return None
+
+# Singleton
+ai_engine = PlantNetAPI()
