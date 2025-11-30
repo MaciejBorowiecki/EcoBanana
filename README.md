@@ -9,7 +9,15 @@ System ma na celu wspieranie walki z Inwazyjnymi Gatunkami Obcymi (IGO) roślin 
 - Skaner AI: Rozpoznawanie gatunków roślin ze zdjęcia (integracja z Pl@ntNet API).
 - Weryfikacja IGO: Automatyczne sprawdzanie statusu prawnego i poziomu szkodliwości rośliny w Polsce na podstawie [bazy danych](https://environment.ec.europa.eu/topics/nature-and-biodiversity/invasive-alien-species_en).
 - Grywalizacja: Przyznawanie punktów użytkownikom za znalezienie gatunków inwazyjnych.
--Panel Urzędnika: Mapa i lista zgłoszeń dla zarządców terenów (Dashboard).
+- Panel Urzędnika: Mapa i lista zgłoszeń dla zarządców terenów (Dashboard).
+
+## Workflow
+
+1. Warstwa Kliencka (Mobile Input) Aplikacja mobilna, oparta na React Native (Expo), wykorzystuje bibliotekę expo-camera do akwizycji obrazu oraz expo-location do pobrania metadanych geoprzestrzennych. Dane są przesyłane jako strumień binarny (UploadFile) za pośrednictwem żądania HTTP POST do dedykowanego endpointu /scan.
+
+2. Warstwa Logiki i Inferencji (Backend Processing) Serwer FastAPI obsługuje żądanie, inicjując połączenie (httpx.AsyncClient) z zewnętrznym API Pl@ntNet (mvp) w celu klasyfikacji inwazyjności rośliny. Uzyskana nazwa łacińska jest mapowana na lokalny zbiór danych (załadowany do pamięci z pliku CSV przetworzonego wcześniej przez Pandas) w celu weryfikacji statusu IGO (Inwazyjnego Gatunku Obcego).
+
+3. Warstwa Danych i Zarządzania. W przypadku pozytywnej identyfikacji, moduł bazy danych wykonuje transakcje SQLite: rekord zgłoszenia jest insertowany do tabeli discoveries, a stan konta użytkownika w tabeli users jest aktualizowany o wyliczoną wartość punktową. Panel administracyjny agreguje te dane poprzez zapytania SQL JOIN, generując listy zadań interwencyjnych dla służb terenowych.
 
 ## Architektura Systemu
 
@@ -19,6 +27,42 @@ System ma na celu wspieranie walki z Inwazyjnymi Gatunkami Obcymi (IGO) roślin 
 - Mobile App: React Native – interfejs dla użytkownika końcowego.
 - Dashboard: Streamlit – interfejs analityczny dla administracji.
 - AI Engine: Zewnętrzne API (Pl@ntNet) do taksonomii roślin.
+
+## Jak Skorzystać
+
+0. Warto stworzyć wirtualne środowisko VENV
+```bash
+    python3 -m venv venv
+    source venv/bin/activate
+```
+
+1. Postawienie lokalnego serwera (MVP)
+
+    a. Aby skorzystać z API Pl@ntAPI, które jest wykorzystane do rozpoznawania roślin należy założyć (darmowe) konto na stronie [Pl@ntAPI](https://my.plantnet.org/), i w zakładce `Settings` skopiować API key. Następnie należy w folderze `EcoBanana/backend` utworzyć plik `.env` a jego zawartość musi wygląć następująco:
+
+```api
+PLANTNET_API_KEY=klucz_wygenerowany_na_Pl@ntAI
+```
+
+```bash
+    cd EcoBanana/backend
+    pip install -r requirements.txt
+    uvicorn main:app --host 0.0.0.0 --port 5555
+```
+
+2. Uruchomienie interfejsu użytkownika
+   
+    a. jeżeli `requirements.txt` nie zainstalowane to należy to najpierw wykonać
+
+```bash
+    cd EcoBanana/webview
+    streamlit run app.py
+```
+
+3. Uruhomienie aplikacji na telefonie
+
+Należy pobrać LowcyRoslin.apk *Działą wyłącznie na systemie Android* i **Konieczne jest *(wersja mvp)* aby telefon i komputer na ktorym postawiony jest serwer były na tym samym *prywatnym (aby ograniczyć problemy z firewallem)* wifi**.
+
 
 ## Tech Stack
 
