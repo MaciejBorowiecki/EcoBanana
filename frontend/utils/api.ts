@@ -1,11 +1,11 @@
 // utils/api.ts
 
-// 🛑 WPISZ TU IP LAPTOPA Z BACKENDEM!
+// IP of host (mvp implementation)
 const API_IP = '10.137.235.39'; 
 const API_PORT = '5555';
 const API_BASE_URL = `http://${API_IP}:${API_PORT}/scanner`; 
 
-// --- TYPY ---
+// Types
 
 export interface ScanResult {
   isInvasive: boolean;
@@ -23,7 +23,7 @@ export interface PlantKnowledgeEntry {
   points: number;
 }
 
-// --- FUNKCJE API ---
+// API Functions
 
 export const analyzePlant = async (photoUri: string): Promise<ScanResult> => {
   const URL = `${API_BASE_URL}/scan`;
@@ -31,7 +31,6 @@ export const analyzePlant = async (photoUri: string): Promise<ScanResult> => {
 
   try {
     const formData = new FormData();
-    // Backend oczekuje tylko pliku 'file'. Lokalizacja i user są hardcoded w Pythonie.
     formData.append('file', {
       uri: photoUri,
       name: 'scan.jpg',
@@ -48,14 +47,12 @@ export const analyzePlant = async (photoUri: string): Promise<ScanResult> => {
 
     const data = await response.json();
     
-    // Mapujemy odpowiedź z routera kolegów
     return {
       isInvasive: data.is_invasive,
       plantName: data.plant_name,
       description: data.message,
       pointsEarned: data.points,
-      // Backend nie zwraca obrazka ani ID raportu, generujemy fake dla UI
-      reportId: '#MVP-' + Math.floor(Math.random() * 1000), 
+      reportId: '#MVP-' + Math.floor(Math.random() * 1000), // MVP implementation
       capturedImageUri: photoUri 
     };
   } catch (e) { console.error(e); throw e; }
@@ -72,16 +69,15 @@ export const getPlantsDatabase = async (): Promise<PlantKnowledgeEntry[]> => {
   }
 };
 
-// NOWE: Pobieranie punktów Janusza
+// Getting user points
 export const getUserPoints = async (): Promise<number> => {
   try {
     const response = await fetch(`${API_BASE_URL}/profile`);
-    // Router zwraca "response_model=int", więc dostaniemy np. 1250
     if (!response.ok) return 0;
     const points = await response.json();
-    return Number(points); // Upewniamy się, że to liczba
+    return Number(points); 
   } catch (e) {
     console.error("Błąd profilu:", e);
-    return 0; // W razie błędu 0 pkt
+    return 0; // In case of error, 0 points.
   }
 };

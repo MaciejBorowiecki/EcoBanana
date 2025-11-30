@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, 
-  Dimensions, SafeAreaView, Modal, Button, ScrollView, Alert, Image, FlatList
+  Dimensions, SafeAreaView, Modal, Button, ScrollView, Alert, Image, StatusBar
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location'; 
 
 import { 
   analyzePlant, getPlantsDatabase, getUserPoints,
@@ -14,26 +15,25 @@ import {
 
 const { width } = Dimensions.get('window');
 
-// --- DANE NA SZTYWNO DLA MVP ---
-const USER_NAME = "Janusz"; // Nasz bohater
-const USER_LEVEL = "Łowca Inwazji";
+// Hard-coded mvp implemented data
+const USER_NAME = "Janusz"; 
+const USER_LEVEL = "Chwastownik lvl. 67";
 
-// --- NAGRODY ---
+// List of rewards (mvp implemenation, should be done with a database)
 const REWARDS = [
   { id: 1, name: "Karta Podarunkowa Roblox 50 PLN", cost: 2000, icon: "gamepad-variant", color: "#000000", lib: "MaterialCommunityIcons" },
   { id: 2, name: "Karta G2A 10 EUR", cost: 1500, icon: "steam", color: "#2d3436", lib: "FontAwesome5" },
-  { id: 3, name: "Hot Dog z Żabki", cost: 300, icon: "food-drumstick", color: "#27ae60", lib: "MaterialCommunityIcons" },
+  { id: 3, name: "Hot Dog z Żabki", cost: 300, icon: "food", color: "#27ae60", lib: "MaterialCommunityIcons" }, // Poprawiona nazwa ikony
   { id: 4, name: "Spotify Premium (1 mc)", cost: 1000, icon: "spotify", color: "#1DB954", lib: "FontAwesome5" },
   { id: 5, name: "Bilet do Kina Helios", cost: 1200, icon: "film", color: "#e74c3c", lib: "FontAwesome5" },
   { id: 6, name: "Zniżka -20% w OBI", cost: 800, icon: "tools", color: "#e67e22", lib: "FontAwesome5" },
 ];
 
-// --- EKRAN PROFILU ---
 const ProfileScreen = ({ points }: { points: number }) => (
   <View style={styles.screenContainer}>
     <View style={styles.profileHeader}>
       <View style={styles.avatarCircle}>
-        <Text style={{fontSize: 40, color: 'white'}}>J</Text>
+        <Text style={{fontSize: 40, color: 'white'}}>{USER_NAME.charAt(0)}</Text>
       </View>
       <Text style={styles.profileName}>{USER_NAME}</Text>
       <Text style={styles.profileLevel}>{USER_LEVEL}</Text>
@@ -45,27 +45,25 @@ const ProfileScreen = ({ points }: { points: number }) => (
       </View>
     </View>
     
-    <Text style={styles.sectionTitle}>Twoje ostatnie akcje:</Text>
+    <Text style={styles.sectionTitle}>Status konta:</Text>
     <View style={styles.activityItem}>
         <Ionicons name="checkmark-circle" size={24} color="#32CD32" />
         <View style={{marginLeft: 10}}>
-          <Text style={{fontWeight: 'bold'}}>Zalogowano do systemu</Text>
-          <Text style={{color:'#666', fontSize: 12}}>Status: Aktywny</Text>
+          <Text style={{fontWeight: 'bold'}}>Konto Aktywne</Text>
+          <Text style={{color:'#666', fontSize: 12}}>Połączono z bazą danych</Text>
         </View>
     </View>
   </View>
 );
 
-// --- EKRAN NAGRÓD ---
 const RewardsScreen = ({ points, onRedeem }: { points: number, onRedeem: (cost: number, name: string) => void }) => (
   <ScrollView style={styles.screenContainer}>
     <Text style={styles.screenTitle}>Nagrody</Text>
-    <Text style={styles.subTitle}>Wymieniaj punkty na karty i zniżki!</Text>
+    <Text style={styles.subTitle}>Masz {points} pkt. Wydawaj mądrze!</Text>
     
     {REWARDS.map(reward => (
       <View key={reward.id} style={styles.couponCard}>
         <View style={styles.couponLeft}>
-          {/* Obsługa różnych bibliotek ikon */}
           {reward.lib === "FontAwesome5" ? (
              <FontAwesome5 name={reward.icon as any} size={28} color={reward.color} />
           ) : (
@@ -92,27 +90,36 @@ const RewardsScreen = ({ points, onRedeem }: { points: number, onRedeem: (cost: 
   </ScrollView>
 );
 
-// --- EKRAN BAZY WIEDZY ---
 const PlantsScreen = () => {
   const [plants, setPlants] = useState<PlantKnowledgeEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    getPlantsDatabase().then(setPlants);
+    getPlantsDatabase()
+      .then(data => {
+        setPlants(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   return (
     <ScrollView style={styles.screenContainer}>
       <Text style={styles.screenTitle}>Baza Inwazyjna</Text>
-      {plants.length === 0 && <ActivityIndicator color="#32CD32" style={{marginTop:20}} />}
       
+      {loading && <ActivityIndicator color="#32CD32" size="large" style={{marginTop: 20}} />}
+
       {plants.map((plant, index) => (
         <View key={index} style={styles.plantCard}>
           <Text style={styles.plantCardTitle}>{plant.polish_name}</Text>
           <Text style={{fontStyle:'italic', color:'#666'}}>{plant.latin_name}</Text>
           <View style={{flexDirection:'row', justifyContent:'space-between', marginTop: 5}}>
-            <Text style={{color: '#FF4500', fontWeight:'bold'}}>{plant.invasiveness}</Text>
-            {/* Backend zwraca punkty, mnożymy x10 bo tak jest w routerze /scan */}
-            <Text style={{color: '#32CD32'}}>Ok. {plant.points * 10} pkt</Text>
+            <Text style={{color: '#FF4500', fontWeight:'bold', flex: 1, marginRight: 10}} numberOfLines={1}>
+              {plant.invasiveness}
+            </Text>
+            <Text style={{color: '#32CD32', fontWeight: 'bold'}}>
+              {plant.points * 10} pkt
+            </Text>
           </View>
         </View>
       ))}
@@ -121,29 +128,44 @@ const PlantsScreen = () => {
   );
 };
 
-// --- GŁÓWNY KOMPONENT ---
 export default function Index() {
   const [camPermission, requestCamPermission] = useCameraPermissions();
   const [activeTab, setActiveTab] = useState<'camera' | 'plants' | 'rewards' | 'profile'>('camera');
   
-  // Stan "Janusza" (Lokalny stan punktów)
+  // Stan punktów (Domyślnie 0, żeby się nie wywaliło)
   const [currentPoints, setCurrentPoints] = useState<number>(0);
 
-  // Stan Skanowania
   const [isScanning, setIsScanning] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [resultData, setResultData] = useState<ScanResult | null>(null);
+  const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  
   const cameraRef = useRef<CameraView>(null);
 
-  // 1. START: Pobierz punkty z backendu
+  // Initialization
   useEffect(() => {
     (async () => {
-      const serverPoints = await getUserPoints();
-      setCurrentPoints(serverPoints);
+      // Tracking GPS (not using it yet in database, because of mvp implementation)
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        let loc = await Location.getCurrentPositionAsync({});
+        setLocation(loc);
+      }
+      
+      // Getting points from backend
+      try {
+        const points = await getUserPoints();
+        // Making sure that points' a number
+        if (typeof points === 'number' && !isNaN(points)) {
+          setCurrentPoints(points);
+        }
+      } catch (e) {
+        console.log("Błąd pobierania punktów na starcie");
+      }
     })();
   }, []);
 
-  // 2. SKANOWANIE
+  // Scanning
   const handleScan = async () => {
     if (isScanning || !cameraRef.current) return;
     setIsScanning(true);
@@ -153,8 +175,6 @@ export default function Index() {
       if (photo?.uri) {
         const data = await analyzePlant(photo.uri);
         setResultData(data);
-        
-        // Jeśli sukces -> Aktualizujemy punkty lokalnie (Optymistyczne UI)
         if (data.isInvasive) {
            setCurrentPoints(prev => prev + data.pointsEarned);
         }
@@ -162,31 +182,25 @@ export default function Index() {
         setModalVisible(true);
       }
     } catch (error) {
-      Alert.alert("Błąd", "Problem z połączeniem z serwerem.");
+      Alert.alert("Błąd", "Nie udało się połączyć z serwerem.");
     } finally {
       setIsScanning(false);
     }
   };
 
-  // 3. KUPOWANIE NAGRODY (Logika tylko we Frontendzie dla MVP)
+  // Reward shop
   const handleRedeem = (cost: number, name: string) => {
     Alert.alert(
       "Potwierdzenie",
-      `Czy chcesz wymienić ${cost} pkt na: ${name}?`,
+      `Kupić: ${name}?`,
       [
-        { text: "Anuluj", style: "cancel" },
+        { text: "Nie", style: "cancel" },
         { 
-          text: "Kupuję", 
+          text: "Tak", 
           onPress: () => {
-            // Odejmujemy punkty lokalnie
-            setCurrentPoints(prev => prev - cost);
-            
-            // Generujemy losowy kod
+            setCurrentPoints(prev => Math.max(0, prev - cost));
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-            Alert.alert(
-                "Sukces! 🎉", 
-                `Twoja nagroda: ${name}\n\nKOD KUPONU: ${code}\n\nPokaż go przy kasie!`
-            );
+            Alert.alert("Sukces!", `Twój kod: ${code}`);
           }
         }
       ]
@@ -194,15 +208,18 @@ export default function Index() {
   };
 
   if (!camPermission || !camPermission.granted) {
-    return <View style={styles.container}><Button onPress={requestCamPermission} title="Daj dostęp do kamery" /></View>;
+    return (
+      <View style={[styles.container, {justifyContent: 'center', alignItems: 'center'}]}>
+        <Text style={{marginBottom: 20}}>Potrzebny dostęp do kamery</Text>
+        <Button onPress={requestCamPermission} title="Przyznaj dostęp" />
+      </View>
+    );
   }
 
-  return (
-    <View style={styles.container}>
-      
-      {/* GŁÓWNA ZAWARTOŚĆ */}
-      <View style={{ flex: 1 }}>
-        {activeTab === 'camera' && (
+  const renderScreen = () => {
+    switch (activeTab) {
+      case 'camera':
+        return (
           <CameraView ref={cameraRef} style={styles.camera} facing="back">
              <SafeAreaView style={styles.uiLayer}>
                 <View style={styles.topOverlay}>
@@ -211,29 +228,54 @@ export default function Index() {
                   </Text>
                 </View>
                 <View style={styles.centerFocus}>
-                  {isScanning ? <ActivityIndicator size="large" color="#32CD32" /> : <View style={styles.focusFrame} />}
+                  {isScanning ? (
+                    <ActivityIndicator size="large" color="#32CD32" />
+                  ) : (
+                    <View style={styles.focusFrame} />
+                  )}
                 </View>
                 <View style={styles.controlsContainer}>
                   <TouchableOpacity onPress={handleScan} disabled={isScanning}>
                     <LinearGradient colors={['#32CD32', '#228B22']} style={styles.scanButton}>
-                      <Text style={styles.scanButtonText}>{isScanning ? 'ANALIZA...' : 'SKANUJ'}</Text>
+                      <Text style={styles.scanButtonText}>
+                        {isScanning ? 'ANALIZA...' : 'SKANUJ'}
+                      </Text>
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
              </SafeAreaView>
           </CameraView>
-        )}
-        {activeTab === 'plants' && <PlantsScreen />}
-        {activeTab === 'rewards' && <RewardsScreen points={currentPoints} onRedeem={handleRedeem} />}
-        {activeTab === 'profile' && <ProfileScreen points={currentPoints} />}
+        );
+      case 'plants': return <PlantsScreen />;
+      case 'rewards': return <RewardsScreen points={currentPoints} onRedeem={handleRedeem} />;
+      case 'profile': return <ProfileScreen points={currentPoints} />;
+      default: return null;
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      
+      {/* Kontener na treść (zajmuje całą górę) */}
+      <View style={{ flex: 1 }}>
+        {renderScreen()}
       </View>
 
-      {/* PASEK NAWIGACJI */}
+      {/* Dolny pasek nawigacji */}
       <View style={styles.bottomBar}>
         {['camera', 'plants', 'rewards', 'profile'].map((tab) => (
-          <TouchableOpacity key={tab} style={styles.navItem} onPress={() => setActiveTab(tab as any)}>
+          <TouchableOpacity 
+            key={tab} 
+            style={styles.navItem} 
+            onPress={() => setActiveTab(tab as any)}
+          >
             <Ionicons 
-              name={tab === 'camera' ? 'camera' : tab === 'plants' ? 'leaf' : tab === 'rewards' ? 'trophy' : 'person'} 
+              name={
+                tab === 'camera' ? 'camera' : 
+                tab === 'plants' ? 'leaf' : 
+                tab === 'rewards' ? 'trophy' : 'person'
+              } 
               size={28} 
               color={activeTab === tab ? '#32CD32' : '#ccc'} 
             />
@@ -241,18 +283,37 @@ export default function Index() {
         ))}
       </View>
 
-      {/* MODAL WYNIKU */}
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {resultData?.capturedImageUri && <Image source={{ uri: resultData.capturedImageUri }} style={styles.resultImage} />}
-            <Text style={styles.modalTitle}>{resultData?.isInvasive ? "ZNALEZIONO!" : "BEZPIECZNA"}</Text>
-            <Text style={[styles.plantName, !resultData?.isInvasive && {color:'green'}]}>{resultData?.plantName}</Text>
-            <Text style={styles.desc}>{resultData?.description}</Text>
-            {resultData?.isInvasive && (
-               <View style={styles.pointsBadge}><Text style={styles.pointsText}>+{resultData.pointsEarned} PKT</Text></View>
+            
+            {resultData?.capturedImageUri && (
+              <Image source={{ uri: resultData.capturedImageUri }} style={styles.resultImage} />
             )}
-            <Button title="Zamknij" onPress={() => setModalVisible(false)} color="#333" />
+
+            {resultData?.isInvasive ? (
+              <>
+                <Text style={styles.modalTitle}>ZNALEZIONO!</Text>
+                <Text style={styles.plantName}>{resultData.plantName}</Text>
+                <Text style={styles.desc}>{resultData.description}</Text>
+                <View style={styles.pointsBadge}>
+                  <Text style={styles.pointsText}>+{resultData.pointsEarned} PKT</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalTitle}>BEZPIECZNA</Text>
+                <Text style={[styles.plantName, {color:'green'}]}>{resultData?.plantName}</Text>
+                <Text style={styles.desc}>{resultData?.description}</Text>
+              </>
+            )}
+
+            <TouchableOpacity 
+              onPress={() => setModalVisible(false)} 
+              style={styles.closeButton}
+            >
+              <Text style={{color:'white', fontWeight:'bold'}}>ZAMKNIJ</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -265,51 +326,48 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   camera: { flex: 1 },
   uiLayer: { flex: 1, justifyContent: 'space-between', padding: 20 },
-  topOverlay: { marginTop: 40, alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', alignSelf: 'center', padding: 10, borderRadius: 20 },
+  topOverlay: { marginTop: 40, alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 20 },
   centerFocus: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   focusFrame: { width: 250, height: 300, borderWidth: 2, borderColor: 'white', borderStyle: 'dashed', borderRadius: 20 },
   controlsContainer: { alignItems: 'center', marginBottom: 20 },
-  scanButton: { paddingHorizontal: 40, paddingVertical: 15, borderRadius: 30 },
-  scanButtonText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
-  bottomBar: { height: 80, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', backgroundColor: 'white', elevation: 10 },
-  navItem: { padding: 10 },
+  scanButton: { paddingHorizontal: 40, paddingVertical: 15, borderRadius: 30, elevation: 5 },
+  scanButtonText: { color: 'white', fontWeight: 'bold', fontSize: 18, letterSpacing: 1 },
+  bottomBar: { height: 80, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', backgroundColor: 'white', borderTopWidth: 1, borderTopColor: '#eee', elevation: 10 },
+  navItem: { padding: 10, alignItems: 'center', justifyContent: 'center', width: 60 },
   
   screenContainer: { flex: 1, padding: 20, paddingTop: 60 },
-  screenTitle: { fontSize: 28, fontWeight: 'bold', marginBottom: 5 },
+  screenTitle: { fontSize: 28, fontWeight: 'bold', marginBottom: 5, color: '#333' },
   subTitle: { fontSize: 16, color: '#666', marginBottom: 20 },
   
-  // Nagrody
-  couponCard: { flexDirection: 'row', backgroundColor: 'white', padding: 20, borderRadius: 15, marginBottom: 15, alignItems: 'center', elevation: 2 },
+  couponCard: { flexDirection: 'row', backgroundColor: 'white', padding: 15, borderRadius: 15, marginBottom: 15, alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
   couponLeft: { width: 50, alignItems: 'center', marginRight: 15 },
   couponRight: { flex: 1 },
-  couponTitle: { fontSize: 18, fontWeight: 'bold' },
+  couponTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
   couponCost: { color: '#32CD32', fontWeight: 'bold', marginVertical: 5 },
-  redeemButton: { backgroundColor: '#333', padding: 8, borderRadius: 10, alignSelf: 'flex-start' },
-  redeemText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
+  redeemButton: { backgroundColor: '#333', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, alignSelf: 'flex-start' },
+  redeemText: { color: 'white', fontWeight: 'bold', fontSize: 10 },
   
-  // Profil
   profileHeader: { alignItems: 'center', marginBottom: 30 },
-  avatarCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#32CD32', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-  profileName: { fontSize: 24, fontWeight: 'bold' },
-  profileLevel: { fontSize: 16, color: '#32CD32' },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'white', padding: 20, borderRadius: 15, elevation: 2 },
+  avatarCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#32CD32', justifyContent: 'center', alignItems: 'center', marginBottom: 15, elevation: 5 },
+  profileName: { fontSize: 22, fontWeight: 'bold', color: '#333' },
+  profileLevel: { fontSize: 14, color: '#32CD32', fontWeight: '600' },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: 'white', padding: 20, borderRadius: 15, elevation: 2, marginBottom: 30 },
   statBox: { alignItems: 'center' },
-  statValue: { fontSize: 24, fontWeight: 'bold' },
-  statLabel: { color: '#888' },
-  activityItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 15, borderRadius: 15, marginTop: 10 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
+  statValue: { fontSize: 22, fontWeight: 'bold', color: '#333' },
+  statLabel: { color: '#888', fontSize: 12 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#333' },
+  activityItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 15, borderRadius: 12, elevation: 1 },
 
-  // Plant Card
-  plantCard: { backgroundColor: 'white', padding: 15, borderRadius: 10, marginBottom: 10, elevation: 1 },
-  plantCardTitle: { fontWeight: 'bold', fontSize: 18 },
-  
-  // Modal Result
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '80%', backgroundColor: 'white', padding: 20, borderRadius: 20, alignItems: 'center' },
-  resultImage: { width: 150, height: 150, borderRadius: 10, marginBottom: 15 },
-  modalTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-  plantName: { fontSize: 20, color: '#FF4500', marginBottom: 10 },
-  desc: { textAlign: 'center', marginBottom: 15, color: '#555' },
-  pointsBadge: { backgroundColor: '#FFD700', padding: 10, borderRadius: 10, marginBottom: 15 },
-  pointsText: { fontWeight: 'bold', color: '#B8860B' }
+  plantCard: { backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, elevation: 2 },
+  plantCardTitle: { fontWeight: 'bold', fontSize: 16, color: '#333' },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '85%', backgroundColor: 'white', padding: 25, borderRadius: 25, alignItems: 'center', elevation: 10 },
+  resultImage: { width: 140, height: 140, borderRadius: 15, marginBottom: 15, borderWidth: 2, borderColor: '#eee' },
+  modalTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 10, color: '#333' },
+  plantName: { fontSize: 20, color: '#FF4500', fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
+  desc: { textAlign: 'center', marginBottom: 20, color: '#666', lineHeight: 20 },
+  pointsBadge: { backgroundColor: '#FFD700', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, marginBottom: 20 },
+  pointsText: { fontWeight: 'bold', color: '#B8860B', fontSize: 16 },
+  closeButton: { backgroundColor: '#333', paddingHorizontal: 30, paddingVertical: 12, borderRadius: 20 },
 });
