@@ -17,7 +17,7 @@ def log_discovery(user_id, polish_name, location) :
         points_to_add = result['inv_points']*10
 
         if result is None:
-            print(f"❌ Błąd: Roślina o nazwie '{polish_name}' nie istnieje w bazie plants.")
+            print(f"Błąd: Roślina o nazwie '{polish_name}' nie istnieje w bazie plants.")
             return None
         plant_id = result[0]
         cursor.execute("""INSERT INTO discoveries (user_id, plant_id,
