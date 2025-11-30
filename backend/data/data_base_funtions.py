@@ -6,13 +6,19 @@ def create_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-def log_discovery(user_id, plant_id, image_url, location) :
+def log_discovery(user_id, polish_name, location) :
     conn  = create_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("""INSERT INTO discoveries (user_id, plant_id, image_url,
+        cursor.execute("SELECT id FROM plants WHERE polish_name = ?", (polish_name,))
+        result = cursor.fetchone()
+        if result is None:
+            print(f"❌ Błąd: Roślina o nazwie '{polish_name}' nie istnieje w bazie plants.")
+            return None
+        plant_id = result[0]
+        cursor.execute("""INSERT INTO discoveries (user_id, plant_id,
                                                    location, created_at)
-                          VALUES (?, ?, ?, ?, datetime('now'))""", (user_id, plant_id, image_url, location))
+                          VALUES (?, ?, ?, datetime('now'))""", (user_id, plant_id, location))
         new_id = cursor.lastrowid
         conn.commit()
         print(f"Dodano zgłoszenie ID: {new_id} dla Usera: {user_id}")
@@ -32,7 +38,11 @@ def approve_discovery(confirmed_id) :
             SET confirmed = confirmed + 1 
             WHERE id = (SELECT plant_id FROM discoveries WHERE id = ?)
         """, (confirmed_id))
+        cursor.execute("""SELECT inv_points FROM plants WHERE id = (SELECT plant_id FROM discoveries WHERE id = ?)""")
+        result = cursor.fetchone()
+        result = int(result[0]) * 10
         conn.commit()
+        user_give_points(confirmed_id, result)
 
 def plants_to_dig():
     with sqlite3.connect(db_name) as conn:
@@ -54,6 +64,7 @@ def plants_to_dig():
                 row['polish_name'],
                 row['location'],
             ))
+        return results
 
 
 
@@ -63,10 +74,10 @@ def user_add(username):
         cursor.execute("""INSERT INTO users (username) VALUES (?)""",(username,))
         conn.commit()
 
-user_add("Janusz")
-user_add("Banan")
-user_add("Boro")
-
+def user_give_points(username, points_to_add):
+    with sqlite3.connect(db_name) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""UPDATE users SET points = points + (?) WHERE username = (?)""",(points_to_add, (username,))
 
 
 
