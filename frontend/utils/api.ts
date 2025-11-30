@@ -37,6 +37,12 @@ export interface UserProfile {
   scansCount: number;
 }
 
+export interface PlantKnowledgeEntry {
+  polish_name: string;
+  latin_name: string;
+  invasiveness: string;
+  points: number;
+}
 // ---------------------------------------------------------
 // FUNKCJE API
 // ---------------------------------------------------------
@@ -111,4 +117,22 @@ export const getUserProfile = async (): Promise<UserProfile> => {
       });
     }, 500);
   });
+};
+export const getPlantsDatabase = async (): Promise<PlantKnowledgeEntry[]> => {
+  // Zamieniamy końcówkę '/scan' na '/plants' w adresie URL
+  // (Zakładając, że API_URL to 'http://.../scanner/scan')
+  const PLANTS_URL = API_URL.replace('/scanner/scan', '/scanner/plants');
+  
+  console.log(`[API] Pobieranie bazy wiedzy z: ${PLANTS_URL}`);
+
+  try {
+    const response = await fetch(PLANTS_URL);
+    if (!response.ok) throw new Error("Błąd pobierania bazy");
+    
+    const data = await response.json();
+    return data; // Zwraca listę roślin z backendu
+  } catch (error) {
+    console.error("Błąd bazy wiedzy:", error);
+    return []; // Zwracamy pustą listę w razie błędu, żeby apka nie padła
+  }
 };

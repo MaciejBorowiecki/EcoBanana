@@ -17,6 +17,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location'; 
+import { getPlantsDatabase, PlantKnowledgeEntry } from '../../utils/api';
 
 // Import funkcji z naszego "backendu"
 import { analyzePlant, getUserProfile, ScanResult, UserProfile } from '../../utils/api';
@@ -85,16 +86,61 @@ const RewardsScreen = () => (
   </ScrollView>
 );
 
-const PlantsScreen = () => (
-  <ScrollView style={styles.screenContainer}>
-    <Text style={styles.screenTitle}>Baza Wiedzy</Text>
-    <View style={styles.plantCard}>
-      <Text style={styles.plantCardTitle}>Barszcz Sosnowskiego</Text>
-      <Text style={styles.plantCardDesc}>Bardzo niebezpieczna roślina parząca. Osiąga do 4m wysokości.</Text>
-      <View style={styles.dangerBadge}><Text style={styles.dangerText}>WYSOKIE RYZYKO</Text></View>
-    </View>
-  </ScrollView>
-);
+const PlantsScreen = () => {
+  const [plants, setPlants] = useState<PlantKnowledgeEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Pobieramy dane przy wejściu na ekran
+    const loadData = async () => {
+      const data = await getPlantsDatabase();
+      setPlants(data);
+      setLoading(false);
+    };
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.screenContainer}>
+        <ActivityIndicator size="large" color="#32CD32" />
+        <Text style={{textAlign:'center', marginTop: 10}}>Aktualizowanie bazy wiedzy...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={styles.screenContainer}>
+      <Text style={styles.screenTitle}>Baza Inwazyjna</Text>
+      <Text style={styles.subTitle}>Lista gatunków monitorowanych przez system.</Text>
+      
+      {plants.map((plant, index) => (
+        <View key={index} style={styles.plantCard}>
+          <Text style={styles.plantCardTitle}>{plant.polish_name}</Text>
+          <Text style={{fontStyle: 'italic', color: '#666', marginBottom: 5}}>{plant.latin_name}</Text>
+          <Text style={styles.plantCardDesc}>
+             Stopień inwazyjności: {plant.invasiveness}
+          </Text>
+          
+          <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'center'}}>
+            <View style={[styles.dangerBadge, { 
+                backgroundColor: plant.points > 4 ? '#FF4500' : '#FFA500' 
+              }]}>
+              <Text style={styles.dangerText}>
+                {plant.points > 4 ? 'WYSOKIE RYZYKO' : 'ŚREDNIE RYZYKO'}
+              </Text>
+            </View>
+            <Text style={{fontWeight:'bold', color:'#32CD32'}}>
+              Wartość: {plant.points * 10} PKT
+            </Text>
+          </View>
+        </View>
+      ))}
+      
+      <View style={{height: 40}} /> 
+    </ScrollView>
+  );
+};
 
 // --- GŁÓWNY KOMPONENT ---
 
