@@ -77,7 +77,7 @@ def user_add(username):
 def user_give_points(username, points_to_add):
     with sqlite3.connect(db_name) as conn:
         cursor = conn.cursor()
-        cursor.execute("""UPDATE users SET points = points + (?) WHERE username = (?)""",(points_to_add, (username,))
+        cursor.execute("""UPDATE users SET points = points + (?) WHERE username = (?)""",(points_to_add, (username,)))
 
 
 
