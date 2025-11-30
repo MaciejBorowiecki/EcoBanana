@@ -11,9 +11,14 @@ def create_connection():
 def log_discovery(user_id, polish_name, location) :
     conn  = create_connection()
     cursor = conn.cursor()
+    row_factory = sqlite3.Row
     try:
-        cursor.execute("SELECT id FROM plants WHERE polish_name = ?", (polish_name,))
+        cursor.execute("SELECT id, inv_points FROM plants WHERE polish_name = ?", (polish_name,))
         result = cursor.fetchone()
+
+        plant_id = result['id']
+        points_to_add = result['inv_points']*10
+
         if result is None:
             print(f"❌ Błąd: Roślina o nazwie '{polish_name}' nie istnieje w bazie plants.")
             return None
@@ -21,10 +26,24 @@ def log_discovery(user_id, polish_name, location) :
         cursor.execute("""INSERT INTO discoveries (user_id, plant_id,
                                                    location, created_at)
                           VALUES (?, ?, ?, datetime('now'))""", (user_id, plant_id, location))
-        new_id = cursor.lastrowid
+        confirmed_id = cursor.lastrowid
+
+        cursor.execute("""UPDATE discoveries
+                          SET confirmed = 1
+                          WHERE id = ?""",
+                       (confirmed_id,))
+        cursor.execute("""UPDATE plants
+                          SET confirmed = confirmed + 1
+                          WHERE id = (SELECT plant_id FROM discoveries WHERE id = ?)
+                       """, (confirmed_id,))
+        cursor.execute("""
+                       UPDATE users
+                       SET points = points + ?
+                       WHERE id = ?
+                       """, (points_to_add, user_id))
         conn.commit()
-        print(f"Dodano zgłoszenie ID: {new_id} dla Usera: {user_id}")
-        return new_id
+        print(f"Dodano zgłoszenie ID: {confirmed_id} dla Usera: {user_id}")
+        return confirmed_id
     except Exception as e:
         print(f"Unexcpected exception while adding log to database: {e}")
         conn.rollback()
@@ -91,8 +110,5 @@ def user_get_points(username):
         cursor.execute("""SELECT points FROM users WHERE username = (?)""",(username,))
         result = cursor.fetchone()
         return result[0]
-
-user_give_points("Janusz", 10)
-print(user_get_points("Janusz"))
 
 
