@@ -7,8 +7,8 @@ db_name = os.path.join(SCRIPT_DIR,'../../identifier.sqlite')
 # When user discoveres a plant it gives him points and sets all statistics
 def log_discovery(user_id, polish_name, location) :
     conn = sqlite3.connect(db_name)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    row_factory = sqlite3.Row
     try:
         cursor.execute("SELECT id, inv_points FROM plants WHERE polish_name = ?", (polish_name,))
         result = cursor.fetchone()
@@ -56,7 +56,7 @@ def approve_discovery(confirmed_id) :
         cursor.execute("""UPDATE plants 
             SET confirmed = confirmed + 1 
             WHERE id = (SELECT plant_id FROM discoveries WHERE id = ?)
-        """, (confirmed_id))
+        """, (confirmed_id,))
         cursor.execute("""SELECT inv_points FROM plants WHERE id = (SELECT plant_id FROM discoveries WHERE id = ?)""")
         result = cursor.fetchone()
         result = int(result[0]) * 10
@@ -109,4 +109,5 @@ def user_get_points(username):
         result = cursor.fetchone()
         return result[0]
 
-
+log_discovery(1, "Klon jesionolistny", "1,2")
+print(user_get_points('Janusz'))
