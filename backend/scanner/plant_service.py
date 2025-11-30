@@ -2,7 +2,6 @@ import csv
 import os
 from typing import Optional, Dict, List
 
-# Ustawiamy ścieżkę do Twojego nowego pliku
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV_PATH = os.path.join(BASE_DIR, 'data', 'parsed_plants_dp.csv')
 
@@ -18,12 +17,10 @@ class PlantDatabase:
             return
 
         with open(CSV_PATH, mode='r', encoding='utf-8') as f:
-            # Twój plik CSV nie ma spacji po przecinkach, więc standardowy reader jest OK
             reader = csv.DictReader(f)
             
             for row in reader:
-                # Normalizujemy dane dla łatwiejszego wyszukiwania
-                # Zamieniamy na małe litery, żeby 'Kudzu' i 'kudzu' było tym samym
+                # Normalise data
                 if row['english_name']:
                     row['search_key'] = row['english_name'].lower()
                 else:

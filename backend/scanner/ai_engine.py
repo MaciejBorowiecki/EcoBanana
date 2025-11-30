@@ -3,7 +3,7 @@ import httpx
 import json
 from dotenv import load_dotenv
 
-# Ładujemy zmienne z pliku .env
+# Load .env variables (API key for mvp)
 load_dotenv()
 
 class PlantNetAPI:
@@ -14,7 +14,7 @@ class PlantNetAPI:
         else:
             print("Pl@ntNet API: Klucz załadowany.")
             
-        # Endpoint API (szukamy we wszystkich florach świata)
+        # Endpoint API (mvp)
         self.api_url = f"https://my-api.plantnet.org/v2/identify/all?api-key={self.api_key}"
 
     async def predict(self, image_bytes: bytes):
@@ -22,12 +22,12 @@ class PlantNetAPI:
             return None
 
         try:
-            # Pl@ntNet wymaga przesłania pliku w formacie multipart
+            # Pl@Net API date format
             files = {
                 'images': ('image.jpg', image_bytes)
             }
             
-            # Parametr 'organs' jest wymagany, 'auto' działa najlepiej dla ogólnych zdjęć
+            # Necessity for Pl@Net API
             data = {
                 'organs': ['auto']
             }
@@ -41,14 +41,14 @@ class PlantNetAPI:
 
             result_json = response.json()
             
-            # Pobieramy najlepszy wynik
+            # Get best result
             best_match = result_json['results'][0]
             
-            # Pl@ntNet zwraca nazwę naukową (Latin) i pewność (Score)
+            # Get latin_name and predict accuracy
             latin_name = best_match['species']['scientificNameWithoutAuthor']
             score = best_match['score']
             
-            # Pobieramy też nazwy potoczne (Common names) jeśli są dostępne
+            # Get all known common names
             common_names = best_match['species'].get('commonNames', [])
             english_name = common_names[0] if common_names else latin_name
 

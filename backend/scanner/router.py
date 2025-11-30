@@ -3,18 +3,17 @@ from .schemas import ScanResultResponse, PlantEntry
 from .ai_engine import ai_engine
 from .plant_service import plant_db
 from typing import List
+import data.data_base_funtions as df
 
 
-# --- TEJ LINIJKI BRAKOWAŁO U CIEBIE: ---
 router = APIRouter()
-# ---------------------------------------
 
 @router.post("/scan", response_model=ScanResultResponse)
 async def scan_plant(file: UploadFile = File(...)):
-    # 1. Odczyt i wysyłka do Pl@ntNet
+    # read and sent to Pla@netAPi
     image_data = await file.read()
     
-    # Używamy Twojego silnika AI (pamiętaj o await, jeśli używasz wersji async)
+    # Use trained model (for mvp API)
     ai_result = await ai_engine.predict(image_data)
     
     if not ai_result:
@@ -27,14 +26,14 @@ async def scan_plant(file: UploadFile = File(...)):
             "points": 0
         }
 
-    # Logujemy co przyszło
+    # Printf console info
     print(f"AI rozpoznało: {ai_result.get('latin_name', 'Unknown')} ({ai_result.get('confidence', 0):.2%})")
 
-    # 2. Szukanie w CSV (przekazujemy cały obiekt ai_result)
+    # Look for result in csv
     plant_info = plant_db.find_by_ai_label(ai_result)
 
     if plant_info:
-        # ZNALEZIONO INWAZYJNĄ W CSV
+        # Plant is marked as invasive
         base_points = int(plant_info['points'])
         multiplier = 10
         return {
@@ -46,13 +45,13 @@ async def scan_plant(file: UploadFile = File(...)):
             "points": base_points * multiplier
         }
     else:
-        # NIE MA W CSV (bezpieczna lub nieznana)
+        # Plant is not in csv which mean 
         return {
             "plant_name": ai_result.get('english_name', 'Unknown'),
             "latin_name": ai_result.get('latin_name', 'Unknown'),
             "confidence": round(ai_result['confidence'], 2),
             "is_invasive": False,
-            "message": "To wygląda na bezpieczną roślinę (brak w bazie IGO).",
+            "message": "To wygląda na bezpieczną roślinę (brak w bazie IGO - inwazyjnych gatunków).",
             "points": 0
         }
         
