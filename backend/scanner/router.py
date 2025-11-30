@@ -36,6 +36,9 @@ async def scan_plant(file: UploadFile = File(...)):
         # Plant is marked as invasive
         base_points = int(plant_info['points'])
         multiplier = 10
+        
+        # Hardcoded for mvp
+        df.log_discovery("1", plant_info["polish_name"], "52.229896, 21.009313")
         return {
             "plant_name": plant_info['polish_name'],
             "latin_name": plant_info['latin_name'],
@@ -58,3 +61,8 @@ async def scan_plant(file: UploadFile = File(...)):
 @router.get("/plants", response_model=List[PlantEntry])
 def get_knowledge_base():
     return plant_db.get_all_plants()
+
+@router.get("/profile", response_model=int)
+def get_user_points():
+    # Hardcoded one user of points for mvp
+    return df.user_get_points("Janusz")
