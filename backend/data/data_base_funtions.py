@@ -72,12 +72,10 @@ def plants_to_dig():
                 SELECT d.id, p.polish_name, d.location
                 FROM discoveries d
                          JOIN plants p ON d.plant_id = p.id
-                WHERE d.confirmed = 0
                 """
         cursor = conn.cursor()
         cursor.execute(query)
         rows = cursor.fetchall()
-        conn.close()
         results = []
         for row in rows:
             results.append((

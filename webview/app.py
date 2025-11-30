@@ -17,8 +17,12 @@ class Klerk:
 
 MOCK_SUBMISSIONS = plants_to_dig()
 
-for submission in MOCK_SUBMISSIONS:
-    submission[3] = submission[3].split(",")
+submission = list(MOCK_SUBMISSIONS)
+for s in submission:
+    s = list(s)
+    s[2] = s[2].split(",")
+#print(submissions)
+#submissions[2] = submissions[2].split(",")
 
 
 
@@ -61,29 +65,6 @@ def main_panel():
     st.header("Mapa Zgłoszeń")
 
     m = folium.Map(location=[52.2200, 21.0000], zoom_start=12)
-
-    status_colors = {
-        "NOWE": "red",
-        "W TRAKCIE": "orange",
-        "ZAKOŃCZONE": "green"
-    }
-
-    for submission in MOCK_SUBMISSIONS:
-        color = status_colors.get(submission['status'], 'blue')
-
-        popup_text = f"""
-        <b>{submission['plant_name']}</b><br>
-        Status: {submission['status']}<br>
-        Adres: {submission['address']}
-        """
-
-        folium.Marker(
-            [submission['latitude'], submission['longitude']],
-            popup=popup_text,
-            tooltip=submission['plant_name'],
-            icon=folium.Icon(color=color, icon='info-sign')
-        ).add_to(m)
-
     folium_static(m, width=1000, height=500)
 
 
