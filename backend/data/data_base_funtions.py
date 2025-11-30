@@ -1,6 +1,6 @@
 import sqlite3
 
-db_name = '../../identifier.sqlite'
+db_name = 'identifier.sqlite'
 def create_connection():
     conn = sqlite3.connect(db_name)
     conn.row_factory = sqlite3.Row
