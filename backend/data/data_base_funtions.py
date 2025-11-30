@@ -63,10 +63,6 @@ def user_add(username):
         cursor.execute("""INSERT INTO users (username) VALUES (?)""",(username,))
         conn.commit()
 
-user_add("Janusz")
-user_add("Banan")
-user_add("Boro")
-
 
 
 
