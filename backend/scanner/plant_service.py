@@ -26,7 +26,7 @@ class PlantDatabase:
                 else:
                     row['search_key'] = ""
                 
-                # Dodajemy też nazwę łacińską do wyszukiwania (bo AI czasem zwraca łacinę)
+                # Add latin name
                 if row['latin_name']:
                     row['latin_search_key'] = row['latin_name'].lower()
                 
@@ -45,17 +45,16 @@ class PlantDatabase:
         ai_latin = ai_result.get('latin_name', '').lower()
         ai_english = ai_result.get('english_name', '').lower()
         
-        # Iterujemy po bazie CSV
         for plant in self.plants:
-            # 1. PRIORYTET: Porównanie po łacinie (Bardzo dokładne)
+            # Set priority for latin names
             csv_latin = plant.get('latin_search_key', '')
             
             if csv_latin and ai_latin:
-                # Sprawdzamy czy nazwy są identyczne lub jedna zawiera drugą
+                # looking for plant
                 if csv_latin == ai_latin or csv_latin in ai_latin or ai_latin in csv_latin:
                     return plant
             
-            # 2. ZAPASOWO: Porównanie po angielsku (jeśli łacina zawiedzie)
+            # looking for english name - lower priority
             csv_eng = plant.get('search_key', '')
             if csv_eng and ai_english:
                 if csv_eng in ai_english or ai_english in csv_eng:
