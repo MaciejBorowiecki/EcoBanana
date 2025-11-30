@@ -1,8 +1,10 @@
+streamlit
+pandas
+folium
+streamlit-folium
 fastapi
 uvicorn
-python-multipart
-torch
-transformers
 httpx
-dotenv
-pillow
+python-dotenv
+pydantic
+python-multipart
