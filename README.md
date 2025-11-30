@@ -7,7 +7,7 @@ System ma na celu wspieranie walki z Inwazyjnymi Gatunkami Obcymi (IGO) roślin 
 ## Funkcjonalność
 
 - Skaner AI: Rozpoznawanie gatunków roślin ze zdjęcia (integracja z Pl@ntNet API).
-- Weryfikacja IGO: Automatyczne sprawdzanie statusu prawnego i poziomu szkodliwości rośliny w Polsce na podstawie [bazy danych]([https://environment.ec.europa.eu/topics/nature-and-biodiversity/invasive-alien-species_en](https://dane.gov.pl/pl/dataset/1760,baza-danych-o-inwazyjnych-gatunkach-obcych-roslin-i-zwierzat/resource/21068/table?page=1&per_page=20&q=&sort=)).
+- Weryfikacja IGO: Automatyczne sprawdzanie statusu prawnego i poziomu szkodliwości rośliny w Polsce na podstawie [bazy danych](https://dane.gov.pl/pl/dataset/1760,baza-danych-o-inwazyjnych-gatunkach-obcych-roslin-i-zwierzat/resource/21068/table?page=1&per_page=20&q=&sort=).
 - Grywalizacja: Przyznawanie punktów użytkownikom za znalezienie gatunków inwazyjnych.
 - Panel Urzędnika: Mapa i lista zgłoszeń dla zarządców terenów (Dashboard).
 
