@@ -17,7 +17,9 @@ System ma na celu wspieranie walki z Inwazyjnymi Gatunkami Obcymi (IGO) roślin 
 
 2. Warstwa Logiki i Inferencji (Backend Processing) Serwer FastAPI obsługuje żądanie, inicjując połączenie (httpx.AsyncClient) z zewnętrznym API Pl@ntNet (mvp) w celu klasyfikacji inwazyjności rośliny. Uzyskana nazwa łacińska jest mapowana na lokalny zbiór danych (załadowany do pamięci z pliku CSV przetworzonego wcześniej przez Pandas) w celu weryfikacji statusu IGO (Inwazyjnego Gatunku Obcego).
 
-3. Warstwa Danych i Zarządzania. W przypadku pozytywnej identyfikacji, moduł bazy danych wykonuje transakcje SQLite: rekord zgłoszenia jest insertowany do tabeli discoveries, a stan konta użytkownika w tabeli users jest aktualizowany o wyliczoną wartość punktową. Panel administracyjny agreguje te dane poprzez zapytania SQL JOIN, generując listy zadań interwencyjnych dla służb terenowych.
+3. Warstwa Danych (Data Base) W przypadku pozytywnej identyfikacji, moduł bazy danych wykonuje transakcje SQLite: rekord zgłoszenia jest insertowany do tabeli discoveries, a stan konta użytkownika w tabeli users jest aktualizowany o wyliczoną wartość punktową.
+
+4. Wasrtwa Administracyjna (Webview) Panel administracyjny agreguje te dane poprzez zapytania SQL JOIN, generując listy zadań interwencyjnych dla służb terenowych. 
 
 ## Architektura Systemu
 
