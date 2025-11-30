@@ -1,15 +1,12 @@
 import os
 import sqlite3
-
+# Absolute path
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 db_name = os.path.join(SCRIPT_DIR,'../../identifier.sqlite')
-def create_connection():
-    conn = sqlite3.connect(db_name)
-    conn.row_factory = sqlite3.Row
-    return conn
 
+# When user discoveres a plant it gives him points and sets all statistics
 def log_discovery(user_id, polish_name, location) :
-    conn  = create_connection()
+    conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
     row_factory = sqlite3.Row
     try:
@@ -50,6 +47,7 @@ def log_discovery(user_id, polish_name, location) :
     finally:
         conn.close()
 
+# User gets point as sson as someone who digs the gives an approval
 def approve_discovery(confirmed_id) :
     with sqlite3.connect(db_name) as conn:
         cursor = conn.cursor()
