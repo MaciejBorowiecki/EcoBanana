@@ -61,7 +61,7 @@ PLANTNET_API_KEY=klucz_wygenerowany_na_Pl@ntAI
 
 3. Uruhomienie aplikacji na telefonie
 
-Należy pobrać LowcyRoslin.apk *Działą wyłącznie na systemie Android* i **Konieczne jest *(wersja mvp)* aby telefon i komputer na ktorym postawiony jest serwer były na tym samym *prywatnym (aby ograniczyć problemy z firewallem)* wifi**.
+Należy pobrać `LowcyRoslin.apk` z releases na [repozytorium](https://github.com/MaciejBorowiecki/EcoBanana) *Działą wyłącznie na systemie Android* i **Konieczne jest *(wersja mvp)* aby telefon i komputer na ktorym postawiony jest serwer były na tym samym *prywatnym (aby ograniczyć problemy z firewallem)* wifi**.
 
 
 ## Tech Stack
