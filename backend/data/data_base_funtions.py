@@ -1,6 +1,8 @@
+import os
 import sqlite3
 
-db_name = 'identifier.sqlite'
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+db_name = os.path.join(SCRIPT_DIR,'../../identifier.sqlite')
 def create_connection():
     conn = sqlite3.connect(db_name)
     conn.row_factory = sqlite3.Row
@@ -44,6 +46,8 @@ def approve_discovery(confirmed_id) :
         conn.commit()
         user_give_points(confirmed_id, result)
 
+# Give a list of unchecked plant for someone to dig them out
+# list contains tirpplets
 def plants_to_dig():
     with sqlite3.connect(db_name) as conn:
         conn.row_factory = sqlite3.Row
@@ -67,25 +71,28 @@ def plants_to_dig():
         return results
 
 
-
+# Add new user
 def user_add(username):
     with sqlite3.connect(db_name) as conn:
         cursor = conn.cursor()
         cursor.execute("""INSERT INTO users (username) VALUES (?)""",(username,))
         conn.commit()
 
+# Give user points for finding a invasive plant
 def user_give_points(username, points_to_add):
     with sqlite3.connect(db_name) as conn:
         cursor = conn.cursor()
-        cursor.execute("""UPDATE users SET points = points + (?) WHERE username = (?)""",(points_to_add, (username,)))
+        cursor.execute("""UPDATE users SET points = points + (?) WHERE username = (?)""",(points_to_add, username))
 
+# Get current points of user
 def user_get_points(username):
     with sqlite3.connect(db_name) as conn:
         cursor = conn.cursor()
         cursor.execute("""SELECT points FROM users WHERE username = (?)""",(username,))
         result = cursor.fetchone()
-        return result
+        return result[0]
 
-
+user_give_points("Janusz", 10)
+print(user_get_points("Janusz"))
 
 
