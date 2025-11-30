@@ -12,6 +12,6 @@ class ScanResultResponse(BaseModel):
 class PlantEntry(BaseModel):
     polish_name: str
     latin_name: str 
-    invasivness: str
+    invasiveness: str
     points: int 
     description: str = ""

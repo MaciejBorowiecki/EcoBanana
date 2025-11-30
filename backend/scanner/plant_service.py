@@ -1,6 +1,6 @@
 import csv
 import os
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 # Ustawiamy ścieżkę do Twojego nowego pliku
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -66,7 +66,7 @@ class PlantDatabase:
         
         return None
 
-    def get_all_plants(self):
+    def get_all_plants(self) -> List[Dict]:
         return self.plants
     
 # Singleton
