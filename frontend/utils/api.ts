@@ -1,17 +1,12 @@
 // utils/api.ts
 
-// ---------------------------------------------------------
-// KONFIGURACJA POŁĄCZENIA
-// ---------------------------------------------------------
-// ZMIEŃ TO NA ADRES IP LAPTOPA Z BACKENDEM!
-// Jeśli kolega ma np. 192.168.0.15, wpisz to tutaj.
-const API_URL = 'http://10.137.235.39:5555/scanner/scan';
+// 🛑 WPISZ TU IP LAPTOPA Z BACKENDEM!
+const API_IP = '10.137.235.39'; 
+const API_PORT = '5555';
+const API_BASE_URL = `http://${API_IP}:${API_PORT}/scanner`; 
 
-// ---------------------------------------------------------
-// TYPY DANYCH (INTERFEJSY)
-// ---------------------------------------------------------
+// --- TYPY ---
 
-// To jest format, którego oczekuje Twój Frontend (Index.tsx)
 export interface ScanResult {
   isInvasive: boolean;
   plantName: string;
@@ -21,118 +16,72 @@ export interface ScanResult {
   capturedImageUri?: string;
 }
 
-// POPRAWIONE: Format z Backendu (teraz poprawne typy TypeScript)
-interface BackendResponse {
-  plant_name: string;
-  latin_name: string;
-  confidence: number;   // W Pythonie float -> w TS number
-  is_invasive: boolean; // W Pythonie bool -> w TS boolean
-  message: string;      // W Pythonie str -> w TS string
-  points: number;       // W Pythonie int -> w TS number
-}
-
-export interface UserProfile {
-  points: number;
-  level: string;
-  scansCount: number;
-}
-
 export interface PlantKnowledgeEntry {
   polish_name: string;
   latin_name: string;
   invasiveness: string;
   points: number;
 }
-// ---------------------------------------------------------
-// FUNKCJE API
-// ---------------------------------------------------------
 
-/**
- * Wysyła zdjęcie do prawdziwego backendu FastAPI.
- */
-export const analyzePlant = async (
-  photoUri: string, 
-  location: { lat: number; lng: number } | null
-): Promise<ScanResult> => {
-  
-  console.log(`[API] Wysyłanie zdjęcia do: ${API_URL}`);
+// --- FUNKCJE API ---
+
+export const analyzePlant = async (photoUri: string): Promise<ScanResult> => {
+  const URL = `${API_BASE_URL}/scan`;
+  console.log(`[API] Skanowanie: ${URL}`);
 
   try {
-    // 1. Przygotowanie formularza (Multipart)
     const formData = new FormData();
-
-    // Dodajemy plik - nazwa 'file' musi się zgadzać z router.py
+    // Backend oczekuje tylko pliku 'file'. Lokalizacja i user są hardcoded w Pythonie.
     formData.append('file', {
       uri: photoUri,
       name: 'scan.jpg',
       type: 'image/jpeg',
     } as any);
-
-    // 2. Strzał do serwera (POST)
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'Accept': 'application/json',
-        // Content-Type ustawi się samo
-      },
-    });
-
-    // 3. Obsługa błędów HTTP
+    
+    const response = await fetch(URL, { method: 'POST', body: formData });
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Błąd serwera (${response.status}): ${errorText}`);
+      const txt = await response.text();
+      console.error('Błąd skanowania:', txt);
+      throw new Error("Błąd serwera");
     }
 
-    // 4. Parsowanie odpowiedzi z backendu
-    const data: BackendResponse = await response.json();
-    console.log('[API] Otrzymano odpowiedź:', data);
-
-    // 5. Mapowanie danych z Backendu na Frontend
+    const data = await response.json();
+    
+    // Mapujemy odpowiedź z routera kolegów
     return {
       isInvasive: data.is_invasive,
-      plantName: data.plant_name,   
-      description: data.message,    
-      pointsEarned: data.points,    
-      reportId: '#ID-' + Math.floor(Math.random() * 10000), 
-      capturedImageUri: photoUri    
+      plantName: data.plant_name,
+      description: data.message,
+      pointsEarned: data.points,
+      // Backend nie zwraca obrazka ani ID raportu, generujemy fake dla UI
+      reportId: '#MVP-' + Math.floor(Math.random() * 1000), 
+      capturedImageUri: photoUri 
     };
+  } catch (e) { console.error(e); throw e; }
+};
 
-  } catch (error) {
-    console.error('[API Error]', error);
-    throw error;
+export const getPlantsDatabase = async (): Promise<PlantKnowledgeEntry[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/plants`);
+    if (!response.ok) return [];
+    return await response.json();
+  } catch (e) {
+    console.error("Błąd bazy wiedzy:", e);
+    return [];
   }
 };
 
-/**
- * Pobieranie profilu użytkownika (Mock).
- */
-export const getUserProfile = async (): Promise<UserProfile> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        points: 0, 
-        level: 'Początkujący',
-        scansCount: 0
-      });
-    }, 500);
-  });
-};
-export const getPlantsDatabase = async (): Promise<PlantKnowledgeEntry[]> => {
-  // Zamieniamy końcówkę '/scan' na '/plants' w adresie URL
-  // (Zakładając, że API_URL to 'http://.../scanner/scan')
-  const PLANTS_URL = API_URL.replace('/scanner/scan', '/scanner/plants');
-  
-  console.log(`[API] Pobieranie bazy wiedzy z: ${PLANTS_URL}`);
-
+// NOWE: Pobieranie punktów Janusza
+export const getUserPoints = async (): Promise<number> => {
   try {
-    const response = await fetch(PLANTS_URL);
-    if (!response.ok) throw new Error("Błąd pobierania bazy");
-    
-    const data = await response.json();
-    return data; // Zwraca listę roślin z backendu
-  } catch (error) {
-    console.error("Błąd bazy wiedzy:", error);
-    return []; // Zwracamy pustą listę w razie błędu, żeby apka nie padła
+    const response = await fetch(`${API_BASE_URL}/profile`);
+    // Router zwraca "response_model=int", więc dostaniemy np. 1250
+    if (!response.ok) return 0;
+    const points = await response.json();
+    return Number(points); // Upewniamy się, że to liczba
+  } catch (e) {
+    console.error("Błąd profilu:", e);
+    return 0; // W razie błędu 0 pkt
   }
 };
