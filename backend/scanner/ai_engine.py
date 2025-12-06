@@ -10,12 +10,12 @@ class PlantNetAPI:
     def __init__(self):
         self.api_key = os.getenv("PLANTNET_API_KEY")
         if not self.api_key:
-            print("UWAGA: Brak klucza PLANTNET_API_KEY w pliku .env!")
+            print("WARNING: Missing PLANTNET_API_KEY in .env file!")
         else:
-            print("Pl@ntNet API: Klucz załadowany.")
+            print("Pl@ntNet API: Key loaded.")
             
         # Endpoint API (mvp)
-        self.api_url = f"https://my-api.plantnet.org/v2/identify/all?api-key={self.api_key}"
+        self.api_url = f"[https://my-api.plantnet.org/v2/identify/all?api-key=](https://my-api.plantnet.org/v2/identify/all?api-key=){self.api_key}"
 
     async def predict(self, image_bytes: bytes):
         if not self.api_key:
@@ -36,7 +36,7 @@ class PlantNetAPI:
                 response = await client.post(self.api_url, files=files, data=data, timeout=15.0)
 
             if response.status_code != 200:
-                print(f"Błąd API Pl@ntNet: {response.text}")
+                print(f"Pl@ntNet API Error: {response.text}")
                 return None
 
             result_json = response.json()
@@ -53,13 +53,13 @@ class PlantNetAPI:
             english_name = common_names[0] if common_names else latin_name
 
             return {
-                "latin_name": latin_name,   # Np. "Heracleum sosnowskyi"
+                "latin_name": latin_name,   # E.g. "Heracleum sosnowskyi"
                 "english_name": english_name,
                 "confidence": score
             }
 
         except Exception as e:
-            print(f"Wyjątek połączenia z API: {e}")
+            print(f"API connection exception: {e}")
             return None
 
 # Singleton

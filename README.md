@@ -1,159 +1,115 @@
-# EcoBanana - Łowca Roślin
+# Plant Hunter
 
-## Cel
+## Goal
 
-System ma na celu wspieranie walki z Inwazyjnymi Gatunkami Obcymi (IGO) roślin w Polsce poprzez angażowanie społeczeństwa (Citizen Science, grywalizacja). Aplikacja umożliwia użytkownikom identyfikację roślin za pomocą zdjęć, ocenę ich inwazyjności oraz zgłaszanie lokalizacji do odpowiednich służb, w bardzo prosty i intuicyjny sposób. Zachęca do aktywnego brania udziału w poszukiwaniu środowiskowych szkodników poprzez system punktów, rankingu i nagród.
+The system aims to support the fight against Invasive Alien Species (IGO) of plants in Poland by engaging the public (Citizen Science, gamification). The application allows users to identify plants using photos, assess their invasiveness, and report locations to the appropriate services in a very simple and intuitive way. It encourages active participation in searching for environmental pests through a points system, ranking, and rewards.
 
-## Funkcjonalność
+## Functionality
 
-- Skaner AI: Rozpoznawanie gatunków roślin ze zdjęcia (integracja z Pl@ntNet API).
-- Weryfikacja IGO: Automatyczne sprawdzanie statusu prawnego i poziomu szkodliwości rośliny w Polsce na podstawie [bazy danych](https://dane.gov.pl/pl/dataset/1760,baza-danych-o-inwazyjnych-gatunkach-obcych-roslin-i-zwierzat/resource/21068/table?page=1&per_page=20&q=&sort=).
-- Grywalizacja: Przyznawanie punktów użytkownikom za znalezienie gatunków inwazyjnych.
-- Panel Urzędnika: Mapa i lista zgłoszeń dla zarządców terenów (Dashboard).
+- AI Scanner: Recognition of plant species from a photo (integration with Pl@ntNet API).
+- IGO Verification: Automatic checking of the legal status and level of harmfulness of a plant in Poland based on the [database](https://dane.gov.pl/pl/dataset/1760,baza-danych-o-inwazyjnych-gatunkach-obcych-roslin-i-zwierzat/resource/21068/table?page=1&per_page=20&q=&sort=).
+- Gamification: Awarding points to users for finding invasive species.
+- Official Panel: Map and list of reports for land managers (Dashboard).
 
 ## Workflow
 
-1. Warstwa Kliencka (Mobile Input) Aplikacja mobilna, oparta na React Native (Expo), wykorzystuje bibliotekę expo-camera do akwizycji obrazu oraz expo-location do pobrania metadanych geoprzestrzennych. Dane są przesyłane jako strumień binarny (UploadFile) za pośrednictwem żądania HTTP POST do dedykowanego endpointu /scan.
+1. Client Layer (Mobile Input)  
+   The mobile application, based on React Native (Expo), uses the expo-camera library for image acquisition and expo-location to retrieve geospatial metadata. Data is transmitted as a binary stream (UploadFile) via an HTTP POST request to a dedicated `/scan` endpoint.
 
-2. Warstwa Logiki i Inferencji (Backend Processing) Serwer FastAPI obsługuje żądanie, inicjując połączenie (httpx.AsyncClient) z zewnętrznym API Pl@ntNet (mvp) w celu klasyfikacji inwazyjności rośliny. Uzyskana nazwa łacińska jest mapowana na lokalny zbiór danych (załadowany do pamięci z pliku CSV przetworzonego wcześniej przez Pandas) w celu weryfikacji statusu IGO (Inwazyjnego Gatunku Obcego).
+2. Logic and Inference Layer (Backend Processing)  
+   A FastAPI server handles the request, initiating a connection (`httpx.AsyncClient`) with the external Pl@ntNet API (MVP) to classify the plant's invasiveness. The obtained Latin name is mapped to a local dataset (loaded into memory from a CSV file preprocessed earlier with Pandas) in order to verify the IGO (Invasive Alien Species) status.
 
-3. Warstwa Danych (Data Base) W przypadku pozytywnej identyfikacji, moduł bazy danych wykonuje transakcje SQLite: rekord zgłoszenia jest insertowany do tabeli discoveries, a stan konta użytkownika w tabeli users jest aktualizowany o wyliczoną wartość punktową.
+3. Data Layer (Data Base)  
+   In the case of a positive identification, the database module executes SQLite transactions: a report record is inserted into the `discoveries` table, and the user's account balance in the `users` table is updated with the calculated point value.
 
-4. Wasrtwa Administracyjna (Webview) Panel administracyjny agreguje te dane poprzez zapytania SQL JOIN, generując listy zadań interwencyjnych dla służb terenowych. 
+4. Administrative Layer (Webview)  
+   The administrative panel aggregates this data through SQL JOIN queries, generating lists of intervention tasks for field services.
 
-## Architektura Systemu
+## System Architecture
 
-### Komponenty:
+### Components:
 
-- Backend: Python (FastAPI) – serce systemu, zarządza logiką i komunikacją.
-- Mobile App: React Native – interfejs dla użytkownika końcowego.
-- Dashboard: Streamlit – interfejs analityczny dla administracji.
-- AI Engine: Zewnętrzne API (Pl@ntNet) do taksonomii roślin.
+- Backend: Python (FastAPI) – the heart of the system, manages logic and communication.
+- Mobile App: React Native – end-user interface.
+- Dashboard: Streamlit – analytical interface for administration.
+- AI Engine: External API (Pl@ntNet) for plant taxonomy.
 
-## Jak Skorzystać
+## How to Use
 
-0. Warto stworzyć wirtualne środowisko VENV
+0. It is worth creating a virtual environment VENV
 ```bash
     python3 -m venv venv
     source venv/bin/activate
 ```
 
-1. Postawienie lokalnego serwera (MVP)
+1. Running a local server (MVP)
 
-    a. Aby skorzystać z API Pl@ntAPI, które jest wykorzystane do rozpoznawania roślin należy założyć (darmowe) konto na stronie [Pl@ntAPI](https://my.plantnet.org/), i w zakładce `Settings` skopiować API key. Następnie należy w folderze `EcoBanana/backend` utworzyć plik `.env` a jego zawartość musi wygląć następująco:
+    a. To use the Pl@ntAPI, which is used for plant recognition, you must create a (free) account on the [Pl@ntAPI](https://my.plantnet.org/) website, and in the `Settings` tab copy the API key. Then create a `.env` file in the `Plant Hunter/backend` folder and its content must look like this:
 
 ```api
-PLANTNET_API_KEY=klucz_wygenerowany_na_Pl@ntAI
+PLANTNET_API_KEY=key_generated_on_Pl@ntAI
 ```
 
 ```bash
-    cd EcoBanana/backend
+    cd Plant Hunter/backend
     pip install -r requirements.txt
     uvicorn main:app --host 0.0.0.0 --port 5555
 ```
 
-2. Uruchomienie interfejsu użytkownika
-   
-    a. jeżeli `requirements.txt` nie zainstalowane to należy to najpierw wykonać
+2. Running the user interface
+
+    a. if `requirements.txt` not installed then do it first
 
 ```bash
-    cd EcoBanana/webview
+    cd Plant Hunter/webview
     streamlit run app.py
 ```
 
-3. Uruhomienie aplikacji na telefonie
+3. Running the app on the phone
 
-Należy pobrać `LowcyRoslin.apk` z releases na [repozytorium](https://github.com/MaciejBorowiecki/EcoBanana) *Działą wyłącznie na systemie Android* i **Konieczne jest *(wersja mvp)* aby telefon i komputer na ktorym postawiony jest serwer były na tym samym *prywatnym (aby ograniczyć problemy z firewallem)* wifi**.
-
+Download `LowcyRoslin.apk` from releases on the [repository](https://github.com/MaciejBorowiecki/Plant-Hunter) *Works only on Android* and **It is necessary *(MVP version)* that the phone and the computer running the server are on the same *private (to limit firewall problems)* Wi-Fi** *(IP must be set to 10.137.235.39)*.
 
 ## Tech Stack
 
 **Backend**
-- Język: Python 3.12+
+- Language: Python 3.12+
 - Framework: FastAPI
-- Serwer: Uvicorn (ASGI)
-- Klient HTTP: HTTPX (Asynchroniczny)
-- Walidacja danych: Pydantic
-- Baza wiedzy: Plik CSV (parsed_plants_dp.csv)
-- Baza operacyjna: (Docelowo) PostgreSQL / SQLite
+- Server: Uvicorn (ASGI)
+- HTTP Client: HTTPX (Asynchronous)
+- Data validation: Pydantic
+- Knowledge base: CSV file (parsed_plants_dp.csv)
+- Operational DB: (Eventually) PostgreSQL / SQLite
 
-**Frontend (Użytkownik)**
-- Technologia: React Native / Expo
-- Komunikacja: Fetch API (Multipart/Form-Data)
+**Frontend (User)**
+- Technology: React Native / Expo
+- Communication: Fetch API (Multipart/Form-Data)
 
 **Frontend (Administrator)**
-- Technologia: Streamlit
-- Mapy: Folium / Streamlit-Folium
-- Wizualizacja: Pandas
+- Technology: Streamlit
+- Maps: Folium / Streamlit-Folium
+- Visualization: Pandas
 
-## Struktura plików
+## File Structure
 
 ```
-└── EcoBanana
-    ├── backend
-    │   ├── data
-    │   │   ├── data_base_funtions.py
-    │   │   ├── igo.csv
-    │   │   ├── igoPyter.ipynb
-    │   │   └── parsed_plants_dp.csv
-    │   ├── identifier.sqlite
-    │   ├── main.py
-    │   ├── requirements.txt
-    │   └── scanner
-    │       ├── ai_engine.py
-    │       ├── plant_service.py
-    │       ├── router.py
-    │       └── schemas.py
-    ├── frontend
-    │   ├── app
-    │   │   ├── _layout.tsx
-    │   │   ├── modal.tsx
-    │   │   └── (tabs)
-    │   │       ├── explore.tsx
-    │   │       ├── index.tsx
-    │   │       └── _layout.tsx
-    │   ├── app.json
-    │   ├── assets
-    │   │   └── images
-    │   │       ├── android-icon-background.png
-    │   │       ├── android-icon-foreground.png
-    │   │       ├── android-icon-monochrome.png
-    │   │       ├── favicon.png
-    │   │       ├── icon.png
-    │   │       ├── partial-react-logo.png
-    │   │       ├── react-logo@2x.png
-    │   │       ├── react-logo@3x.png
-    │   │       ├── react-logo.png
-    │   │       └── splash-icon.png
-    │   ├── components
-    │   │   ├── external-link.tsx
-    │   │   ├── haptic-tab.tsx
-    │   │   ├── hello-wave.tsx
-    │   │   ├── parallax-scroll-view.tsx
-    │   │   ├── themed-text.tsx
-    │   │   ├── themed-view.tsx
-    │   │   └── ui
-    │   │       ├── collapsible.tsx
-    │   │       ├── icon-symbol.ios.tsx
-    │   │       └── icon-symbol.tsx
-    │   ├── constants
-    │   │   └── theme.ts
-    │   ├── eas.json
-    │   ├── eslint.config.js
-    │   ├── hooks
-    │   │   ├── use-color-scheme.ts
-    │   │   ├── use-color-scheme.web.ts
-    │   │   └── use-theme-color.ts
-    │   ├── package.json
-    │   ├── package-lock.json
-    │   ├── README.md
-    │   ├── scripts
-    │   │   └── reset-project.js
-    │   ├── tsconfig.json
-    │   └── utils
-    │       └── api.ts
-    ├── identifier.sqlite
-    ├── LICENSE
-    ├── README.md
-    └── webview
-        └── app.py
+Plant Hunter
+├── backend/
+│   ├── data/             # CSV datasets (IGO list) & Database logic
+│   ├── scanner/          # AI integration (Pl@ntNet) & API routes
+│   └── main.py           # FastAPI server entry point
+├── frontend/             # React Native (Expo) mobile application
+│   ├── app/              # Screens (Camera, Map, Profile) & Navigation
+│   └── utils/            # API client functions
+├── webview/              # Admin dashboard (Streamlit) for officials
+└── identifier.sqlite     # SQLite database storing users and findings
+```
+
+**Legend:**
+
+`backend/`: The core logic powered by **FastAPI**. It handles image processing, communicates with the external AI API, and manages the local database.
+
+`backend/data/`: Contains the "knowledge base"—CSV files listing invasive species (IGO) and scripts to parse them into the system.
+
+`frontend/`: The mobile user interface built with **React Native (Expo)**. It handles camera access, user geolocation, and gamification elements (points/rewards).
+
+`webview/`: A **Streamlit** web application serving as a control panel for authorities to visualize reported invasive plants on a map.

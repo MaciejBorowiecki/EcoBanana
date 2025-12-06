@@ -18,16 +18,16 @@ async def scan_plant(file: UploadFile = File(...)):
     
     if not ai_result:
         return {
-            "plant_name": "Błąd",
+            "plant_name": "Error",
             "latin_name": "Error",
             "confidence": 0.0,
             "is_invasive": False,
-            "message": "Nie udało się przetworzyć zdjęcia.",
+            "message": "Failed to process the photo.",
             "points": 0
         }
 
     # Printf console info
-    print(f"AI rozpoznało: {ai_result.get('latin_name', 'Unknown')} ({ai_result.get('confidence', 0):.2%})")
+    print(f"AI recognized: {ai_result.get('latin_name', 'Unknown')} ({ai_result.get('confidence', 0):.2%})")
 
     # Look for result in csv
     plant_info = plant_db.find_by_ai_label(ai_result)
@@ -44,7 +44,7 @@ async def scan_plant(file: UploadFile = File(...)):
             "latin_name": plant_info['latin_name'],
             "confidence": round(ai_result['confidence'], 2),
             "is_invasive": True,
-            "message": f"Zidentyfikowano gatunek inwazyjny: {plant_info['polish_name']}",
+            "message": f"Invasive species identified: {plant_info['polish_name']}",
             "points": base_points * multiplier
         }
     else:
@@ -54,7 +54,7 @@ async def scan_plant(file: UploadFile = File(...)):
             "latin_name": ai_result.get('latin_name', 'Unknown'),
             "confidence": round(ai_result['confidence'], 2),
             "is_invasive": False,
-            "message": "To wygląda na bezpieczną roślinę (brak w bazie IGO - inwazyjnych gatunków).",
+            "message": "This looks like a safe plant (not in the IAS - Invasive Alien Species database).",
             "points": 0
         }
         

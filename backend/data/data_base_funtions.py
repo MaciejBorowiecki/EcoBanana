@@ -17,7 +17,7 @@ def log_discovery(user_id, polish_name, location) :
         points_to_add = result['inv_points']*10
 
         if result is None:
-            print(f"Błąd: Roślina o nazwie '{polish_name}' nie istnieje w bazie plants.")
+            print(f"Error: Plant named '{polish_name}' does not exist in the plants database.")
             return None
         plant_id = result[0]
         cursor.execute("""INSERT INTO discoveries (user_id, plant_id,
@@ -39,7 +39,7 @@ def log_discovery(user_id, polish_name, location) :
                        WHERE id = ?
                        """, (points_to_add, user_id))
         conn.commit()
-        print(f"Dodano zgłoszenie ID: {confirmed_id} dla Usera: {user_id}")
+        print(f"Report ID: {confirmed_id} added for User: {user_id}")
         return confirmed_id
     except Exception as e:
         print(f"Unexcpected exception while adding log to database: {e}")

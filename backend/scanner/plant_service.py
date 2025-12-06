@@ -11,9 +11,9 @@ class PlantDatabase:
         self.load_database()
 
     def load_database(self):
-        """Wczytuje Twój plik parsed_plants_dp.csv do pamięci."""
+        """Loads your parsed_plants_dp.csv file into memory."""
         if not os.path.exists(CSV_PATH):
-            print(f"BŁĄD: Nie znaleziono pliku bazy danych: {CSV_PATH}")
+            print(f"ERROR: Database file not found: {CSV_PATH}")
             return
 
         with open(CSV_PATH, mode='r', encoding='utf-8') as f:
@@ -32,12 +32,12 @@ class PlantDatabase:
                 
                 self.plants.append(row)
         
-        print(f"Załadowano {len(self.plants)} gatunków z pliku parsed_plants_dp.csv.")
+        print(f"Loaded {len(self.plants)} species from parsed_plants_dp.csv.")
 
     def find_by_ai_label(self, ai_result: dict) -> Optional[Dict]:
         """
-        Teraz przyjmujemy cały słownik z AI, a nie tylko etykietę.
-        Szukamy priorytetowo po nazwie ŁACIŃSKIEJ.
+        Now we accept the whole dictionary from AI, not just the label.
+        We search primarily by LATIN name.
         """
         if not ai_result:
             return None

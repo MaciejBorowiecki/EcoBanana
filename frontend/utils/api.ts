@@ -27,7 +27,7 @@ export interface PlantKnowledgeEntry {
 
 export const analyzePlant = async (photoUri: string): Promise<ScanResult> => {
   const URL = `${API_BASE_URL}/scan`;
-  console.log(`[API] Skanowanie: ${URL}`);
+  console.log(`[API] Scanning: ${URL}`);
 
   try {
     const formData = new FormData();
@@ -41,8 +41,8 @@ export const analyzePlant = async (photoUri: string): Promise<ScanResult> => {
     
     if (!response.ok) {
       const txt = await response.text();
-      console.error('Błąd skanowania:', txt);
-      throw new Error("Błąd serwera");
+      console.error('Scanning error:', txt);
+      throw new Error("Server error");
     }
 
     const data = await response.json();
@@ -64,7 +64,7 @@ export const getPlantsDatabase = async (): Promise<PlantKnowledgeEntry[]> => {
     if (!response.ok) return [];
     return await response.json();
   } catch (e) {
-    console.error("Błąd bazy wiedzy:", e);
+    console.error("Knowledge base error:", e);
     return [];
   }
 };
@@ -77,7 +77,7 @@ export const getUserPoints = async (): Promise<number> => {
     const points = await response.json();
     return Number(points); 
   } catch (e) {
-    console.error("Błąd profilu:", e);
+    console.error("Profile error:", e);
     return 0; // In case of error, 0 points.
   }
 };

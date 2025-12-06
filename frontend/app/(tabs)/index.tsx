@@ -17,16 +17,16 @@ const { width } = Dimensions.get('window');
 
 // Hard-coded mvp implemented data
 const USER_NAME = "Janusz"; 
-const USER_LEVEL = "Chwastownik lvl. 67";
+const USER_LEVEL = "Weed Hunter lvl. 67";
 
 // List of rewards (mvp implemenation, should be done with a database)
 const REWARDS = [
-  { id: 1, name: "Karta Podarunkowa Roblox 50 PLN", cost: 2000, icon: "gamepad-variant", color: "#000000", lib: "MaterialCommunityIcons" },
-  { id: 2, name: "Karta G2A 10 EUR", cost: 1500, icon: "steam", color: "#2d3436", lib: "FontAwesome5" },
-  { id: 3, name: "Hot Dog z Żabki", cost: 300, icon: "food", color: "#27ae60", lib: "MaterialCommunityIcons" }, // Poprawiona nazwa ikony
-  { id: 4, name: "Spotify Premium (1 mc)", cost: 1000, icon: "spotify", color: "#1DB954", lib: "FontAwesome5" },
-  { id: 5, name: "Bilet do Kina Helios", cost: 1200, icon: "film", color: "#e74c3c", lib: "FontAwesome5" },
-  { id: 6, name: "Zniżka -20% w OBI", cost: 800, icon: "tools", color: "#e67e22", lib: "FontAwesome5" },
+  { id: 1, name: "Roblox Gift Card 50 PLN", cost: 2000, icon: "gamepad-variant", color: "#000000", lib: "MaterialCommunityIcons" },
+  { id: 2, name: "G2A Card 10 EUR", cost: 1500, icon: "steam", color: "#2d3436", lib: "FontAwesome5" },
+  { id: 3, name: "Hot Dog from Żabka", cost: 300, icon: "food", color: "#27ae60", lib: "MaterialCommunityIcons" }, // Corrected icon name
+  { id: 4, name: "Spotify Premium (1 month)", cost: 1000, icon: "spotify", color: "#1DB954", lib: "FontAwesome5" },
+  { id: 5, name: "Helios Cinema Ticket", cost: 1200, icon: "film", color: "#e74c3c", lib: "FontAwesome5" },
+  { id: 6, name: "Discount -20% at OBI", cost: 800, icon: "tools", color: "#e67e22", lib: "FontAwesome5" },
 ];
 
 const ProfileScreen = ({ points }: { points: number }) => (
@@ -41,16 +41,16 @@ const ProfileScreen = ({ points }: { points: number }) => (
     <View style={styles.statsRow}>
       <View style={styles.statBox}>
         <Text style={styles.statValue}>{points}</Text>
-        <Text style={styles.statLabel}>Dostępne Punkty</Text>
+        <Text style={styles.statLabel}>Available Points</Text>
       </View>
     </View>
     
-    <Text style={styles.sectionTitle}>Status konta:</Text>
+    <Text style={styles.sectionTitle}>Account Status:</Text>
     <View style={styles.activityItem}>
         <Ionicons name="checkmark-circle" size={24} color="#32CD32" />
         <View style={{marginLeft: 10}}>
-          <Text style={{fontWeight: 'bold'}}>Konto Aktywne</Text>
-          <Text style={{color:'#666', fontSize: 12}}>Połączono z bazą danych</Text>
+          <Text style={{fontWeight: 'bold'}}>Account Active</Text>
+          <Text style={{color:'#666', fontSize: 12}}>Connected to database</Text>
         </View>
     </View>
   </View>
@@ -58,8 +58,8 @@ const ProfileScreen = ({ points }: { points: number }) => (
 
 const RewardsScreen = ({ points, onRedeem }: { points: number, onRedeem: (cost: number, name: string) => void }) => (
   <ScrollView style={styles.screenContainer}>
-    <Text style={styles.screenTitle}>Nagrody</Text>
-    <Text style={styles.subTitle}>Masz {points} pkt. Wydawaj mądrze!</Text>
+    <Text style={styles.screenTitle}>Rewards</Text>
+    <Text style={styles.subTitle}>You have {points} pts. Spend wisely!</Text>
     
     {REWARDS.map(reward => (
       <View key={reward.id} style={styles.couponCard}>
@@ -72,7 +72,7 @@ const RewardsScreen = ({ points, onRedeem }: { points: number, onRedeem: (cost: 
         </View>
         <View style={styles.couponRight}>
           <Text style={styles.couponTitle}>{reward.name}</Text>
-          <Text style={styles.couponCost}>{reward.cost} pkt</Text>
+          <Text style={styles.couponCost}>{reward.cost} pts</Text>
           
           <TouchableOpacity 
             style={[styles.redeemButton, points < reward.cost && {backgroundColor: '#ccc'}]}
@@ -80,7 +80,7 @@ const RewardsScreen = ({ points, onRedeem }: { points: number, onRedeem: (cost: 
             onPress={() => onRedeem(reward.cost, reward.name)}
           >
             <Text style={styles.redeemText}>
-              {points < reward.cost ? 'ZA DROGIE' : 'ODBIERZ'}
+              {points < reward.cost ? 'TOO EXPENSIVE' : 'REDEEM'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -105,7 +105,7 @@ const PlantsScreen = () => {
 
   return (
     <ScrollView style={styles.screenContainer}>
-      <Text style={styles.screenTitle}>Baza Inwazyjna</Text>
+      <Text style={styles.screenTitle}>Invasive Database</Text>
       
       {loading && <ActivityIndicator color="#32CD32" size="large" style={{marginTop: 20}} />}
 
@@ -118,7 +118,7 @@ const PlantsScreen = () => {
               {plant.invasiveness}
             </Text>
             <Text style={{color: '#32CD32', fontWeight: 'bold'}}>
-              {plant.points * 10} pkt
+              {plant.points * 10} pts
             </Text>
           </View>
         </View>
@@ -132,7 +132,7 @@ export default function Index() {
   const [camPermission, requestCamPermission] = useCameraPermissions();
   const [activeTab, setActiveTab] = useState<'camera' | 'plants' | 'rewards' | 'profile'>('camera');
   
-  // Stan punktów (Domyślnie 0, żeby się nie wywaliło)
+  // Stan punktów (Default 0, to avoid crash)
   const [currentPoints, setCurrentPoints] = useState<number>(0);
 
   const [isScanning, setIsScanning] = useState(false);
@@ -160,7 +160,7 @@ export default function Index() {
           setCurrentPoints(points);
         }
       } catch (e) {
-        console.log("Błąd pobierania punktów na starcie");
+        console.log("Error fetching points on startup");
       }
     })();
   }, []);
@@ -182,7 +182,7 @@ export default function Index() {
         setModalVisible(true);
       }
     } catch (error) {
-      Alert.alert("Błąd", "Nie udało się połączyć z serwerem.");
+      Alert.alert("Error", "Could not connect to server.");
     } finally {
       setIsScanning(false);
     }
@@ -191,16 +191,16 @@ export default function Index() {
   // Reward shop
   const handleRedeem = (cost: number, name: string) => {
     Alert.alert(
-      "Potwierdzenie",
-      `Kupić: ${name}?`,
+      "Confirmation",
+      `Buy: ${name}?`,
       [
-        { text: "Nie", style: "cancel" },
+        { text: "No", style: "cancel" },
         { 
-          text: "Tak", 
+          text: "Yes", 
           onPress: () => {
             setCurrentPoints(prev => Math.max(0, prev - cost));
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-            Alert.alert("Sukces!", `Twój kod: ${code}`);
+            Alert.alert("Success!", `Your code: ${code}`);
           }
         }
       ]
@@ -210,8 +210,8 @@ export default function Index() {
   if (!camPermission || !camPermission.granted) {
     return (
       <View style={[styles.container, {justifyContent: 'center', alignItems: 'center'}]}>
-        <Text style={{marginBottom: 20}}>Potrzebny dostęp do kamery</Text>
-        <Button onPress={requestCamPermission} title="Przyznaj dostęp" />
+        <Text style={{marginBottom: 20}}>Camera access required</Text>
+        <Button onPress={requestCamPermission} title="Grant access" />
       </View>
     );
   }
@@ -224,7 +224,7 @@ export default function Index() {
              <SafeAreaView style={styles.uiLayer}>
                 <View style={styles.topOverlay}>
                   <Text style={{color:'white', fontWeight:'bold', fontSize: 18}}>
-                    {USER_NAME}: {currentPoints} pkt
+                    {USER_NAME}: {currentPoints} pts
                   </Text>
                 </View>
                 <View style={styles.centerFocus}>
@@ -238,7 +238,7 @@ export default function Index() {
                   <TouchableOpacity onPress={handleScan} disabled={isScanning}>
                     <LinearGradient colors={['#32CD32', '#228B22']} style={styles.scanButton}>
                       <Text style={styles.scanButtonText}>
-                        {isScanning ? 'ANALIZA...' : 'SKANUJ'}
+                        {isScanning ? 'ANALYZING...' : 'SCAN'}
                       </Text>
                     </LinearGradient>
                   </TouchableOpacity>
@@ -293,16 +293,16 @@ export default function Index() {
 
             {resultData?.isInvasive ? (
               <>
-                <Text style={styles.modalTitle}>ZNALEZIONO!</Text>
+                <Text style={styles.modalTitle}>FOUND!</Text>
                 <Text style={styles.plantName}>{resultData.plantName}</Text>
                 <Text style={styles.desc}>{resultData.description}</Text>
                 <View style={styles.pointsBadge}>
-                  <Text style={styles.pointsText}>+{resultData.pointsEarned} PKT</Text>
+                  <Text style={styles.pointsText}>+{resultData.pointsEarned} PTS</Text>
                 </View>
               </>
             ) : (
               <>
-                <Text style={styles.modalTitle}>BEZPIECZNA</Text>
+                <Text style={styles.modalTitle}>SAFE</Text>
                 <Text style={[styles.plantName, {color:'green'}]}>{resultData?.plantName}</Text>
                 <Text style={styles.desc}>{resultData?.description}</Text>
               </>
@@ -312,7 +312,7 @@ export default function Index() {
               onPress={() => setModalVisible(false)} 
               style={styles.closeButton}
             >
-              <Text style={{color:'white', fontWeight:'bold'}}>ZAMKNIJ</Text>
+              <Text style={{color:'white', fontWeight:'bold'}}>CLOSE</Text>
             </TouchableOpacity>
           </View>
         </View>
